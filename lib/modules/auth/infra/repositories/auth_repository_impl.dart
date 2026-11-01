@@ -57,11 +57,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   UserRole _parseRole(String value) {
     switch (value.trim().toLowerCase()) {
-      case 'technician':
-        return UserRole.technician;
+      case 'tecnico':
+        return UserRole.tecnico;
 
-      case 'manager':
-        return UserRole.manager;
+      case 'gestor':
+        return UserRole.gestor;
 
       case 'lojista':
         return UserRole.lojista;

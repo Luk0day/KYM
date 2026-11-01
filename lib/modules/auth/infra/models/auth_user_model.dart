@@ -13,8 +13,8 @@ class AuthUserModel {
   /// Papel recebido da fonte de dados.
   ///
   /// Valores esperados:
-  /// - technician
-  /// - manager
+  /// - tecnico
+  /// - gestor
   /// - lojista
   final String role;
 }

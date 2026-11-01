@@ -31,18 +31,18 @@ class FakeAuthDataSource implements AuthDataSource {
 
   static const List<FakeAuthAccount> defaultAccounts = [
     FakeAuthAccount(
-      id: 'fake-technician-id',
+      id: 'fake-tecnico-id',
       email: 'tecnico@kym.test',
       password: 'kym12345',
-      role: 'technician',
+      role: 'tecnico',
       displayName: 'Técnico Teste',
     ),
     FakeAuthAccount(
-      id: 'fake-manager-id',
-      email: 'gerente@kym.test',
+      id: 'fake-gestor-id',
+      email: 'gestor@kym.test',
       password: 'kym12345',
-      role: 'manager',
-      displayName: 'Gerente Teste',
+      role: 'gestor',
+      displayName: 'Gestor Teste',
     ),
     FakeAuthAccount(
       id: 'fake-lojista-id',

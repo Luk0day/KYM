@@ -25,7 +25,7 @@ void main() {
     await controller.submit(email: ' tecnico@kym.test ', password: 'kym12345');
 
     expect(controller.status, LoginStatus.success);
-    expect(controller.user?.role, UserRole.technician);
+    expect(controller.user?.role, UserRole.tecnico);
     expect(controller.errorMessage, isNull);
   });
 

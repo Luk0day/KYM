@@ -72,7 +72,7 @@ void main() {
     await _pumpApp(tester);
     await _fillAndSubmit(
       tester,
-      email: 'gerente@kym.test',
+      email: 'gestor@kym.test',
       password: 'kym12345',
     );
 
