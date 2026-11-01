@@ -15,6 +15,6 @@ class AuthUserModel {
   /// Valores esperados:
   /// - technician
   /// - manager
-  /// - store_owner
+  /// - lojista
   final String role;
 }

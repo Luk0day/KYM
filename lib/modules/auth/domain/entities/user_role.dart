@@ -1,1 +1,1 @@
-enum UserRole { technician, manager, storeOwner }
+enum UserRole { technician, manager, lojista }

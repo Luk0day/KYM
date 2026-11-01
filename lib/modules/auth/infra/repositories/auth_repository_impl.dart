@@ -63,8 +63,8 @@ class AuthRepositoryImpl implements AuthRepository {
       case 'manager':
         return UserRole.manager;
 
-      case 'store_owner':
-        return UserRole.storeOwner;
+      case 'lojista':
+        return UserRole.lojista;
 
       default:
         throw const AuthFailure(AuthFailureType.invalidProfile);
