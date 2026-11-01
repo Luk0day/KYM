@@ -83,7 +83,7 @@ class SupabaseAuthDataSource implements AuthDataSource {
 
     final profile = await _client
         .from(_profilesTable)
-        .select('display_name, role')
+        .select('full_name, role')
         .eq('id', userId)
         .maybeSingle();
 
@@ -92,7 +92,7 @@ class SupabaseAuthDataSource implements AuthDataSource {
     }
 
     final rawRole = profile['role'];
-    final rawDisplayName = profile['display_name'];
+    final rawDisplayName = profile['full_name'];
 
     if (rawRole is! String || rawRole.trim().isEmpty) {
       throw const AuthFailure(AuthFailureType.invalidProfile);
@@ -102,10 +102,15 @@ class SupabaseAuthDataSource implements AuthDataSource {
       throw const AuthFailure(AuthFailureType.invalidProfile);
     }
 
+    // full_name tem default '' na migration: nome vazio equivale a sem nome.
+    final displayName = (rawDisplayName as String?)?.trim();
+
     return AuthUserModel(
       id: userId,
       email: email.trim(),
-      displayName: (rawDisplayName as String?)?.trim(),
+      displayName: (displayName == null || displayName.isEmpty)
+          ? null
+          : displayName,
       role: rawRole.trim(),
     );
   }
