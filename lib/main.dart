@@ -7,6 +7,8 @@ import 'app/app.dart';
 import 'app/app_module.dart';
 import 'app/config/env.dart';
 import 'app/di/auth_data_source_factory.dart';
+import 'app/storage/secure_key_value_store.dart';
+import 'app/storage/secure_session_storage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +19,9 @@ Future<void> main() async {
     await Supabase.initialize(
       url: Env.supabaseUrl,
       publishableKey: Env.supabasePublishableKey,
+      authOptions: FlutterAuthClientOptions(
+        localStorage: SecureSessionStorage(SecureKeyValueStore()),
+      ),
     );
   }
 
