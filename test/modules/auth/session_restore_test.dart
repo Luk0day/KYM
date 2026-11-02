@@ -22,10 +22,8 @@ void main() {
   setUp(() => store = InMemoryKeyValueStore());
 
   test('restaura a sessão ao "reabrir o app"', () async {
-    await _newDataSource(store).signInWithEmail(
-      email: 'gestor@kym.test',
-      password: 'kym12345',
-    );
+    await _newDataSource(store)
+        .signInWithEmail(email: 'gestor@kym.test', password: 'kym12345');
 
     final session = _newSession(_newDataSource(store));
     await session.restore();
