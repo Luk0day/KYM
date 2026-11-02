@@ -1,3 +1,4 @@
+import '../../../../app/storage/key_value_store.dart';
 import '../../domain/errors/auth_failure.dart';
 import '../models/auth_user_model.dart';
 import 'auth_datasource.dart';
@@ -23,7 +24,8 @@ class FakeAuthDataSource implements AuthDataSource {
   FakeAuthDataSource({
     List<FakeAuthAccount>? accounts,
     this.latency = const Duration(milliseconds: 600),
-  }) : _accounts = accounts ?? defaultAccounts;
+    KeyValueStore? sessionStore,
+  })  : _accounts = accounts ?? defaultAccounts, _sessionStore = sessionStore ?? InMemoryKeyValueStore();
 
   static const List<FakeAuthAccount> defaultAccounts = [
     FakeAuthAccount(
@@ -51,6 +53,11 @@ class FakeAuthDataSource implements AuthDataSource {
 
   final List<FakeAuthAccount> _accounts;
 
+  final KeyValueStore _sessionStore;
+
+  static const String _sessionKey = 'kym.fake.session_user_id';
+
+  /// Atraso simulado das operações. Use [Duration.zero] em testes.
   final Duration latency;
 
   /// Quando definido, a próxima operação falha com este tipo e o valor é
@@ -76,6 +83,7 @@ class FakeAuthDataSource implements AuthDataSource {
       throw const AuthFailure(AuthFailureType.invalidCredentials);
     }
 
+    await _sessionStore.write(_sessionKey, account.id);
     return _currentUser = _toModel(account);
   }
 
@@ -83,13 +91,22 @@ class FakeAuthDataSource implements AuthDataSource {
   Future<AuthUserModel?> getCurrentUser() async {
     await _simulateLatency();
     _throwIfFailureScheduled();
-    return _currentUser;
+
+    if (_currentUser != null) {
+      return _currentUser;
+    }
+
+    final savedId = await _sessionStore.read(_sessionKey);
+    final account =
+        _accounts.where((item) => item.id == savedId).firstOrNull;
+    return _currentUser = account == null ? null : _toModel(account);
   }
 
   @override
   Future<void> signOut() async {
     await _simulateLatency();
     _currentUser = null;
+    await _sessionStore.delete(_sessionKey);
   }
 
   AuthUserModel _toModel(FakeAuthAccount account) {
