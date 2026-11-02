@@ -5,8 +5,7 @@ class Env {
   static String get supabasePublishableKey =>
       dotenv.env['SUPABASE_PUBLISHABLE_KEY']!;
 
-  /// Quando `true`, o app usa um datasource de autenticação em memória
-  /// no lugar do Supabase. Útil enquanto o backend não está configurado.
+  /// Permite rodar o app antes de o Supabase estar configurado na nuvem.
   static bool get useFakeAuth =>
       dotenv.env['USE_FAKE_AUTH']?.trim().toLowerCase() == 'true';
 }

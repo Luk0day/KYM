@@ -47,7 +47,6 @@ class LoginController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Limpa a mensagem de erro (ex.: quando o usuário volta a digitar).
   void clearError() {
     if (_status != LoginStatus.failure) {
       return;

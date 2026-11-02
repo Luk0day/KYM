@@ -4,8 +4,6 @@ import '../../domain/entities/authenticated_user.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/sign_out.dart';
 
-/// Guarda o usuário autenticado enquanto o app está aberto.
-///
 /// É um singleton (vive o app todo): a splash restaura a sessão, o login a
 /// inicia e a área logada a encerra.
 class SessionController extends ChangeNotifier {
@@ -19,7 +17,7 @@ class SessionController extends ChangeNotifier {
   AuthenticatedUser? get user => _user;
   bool get isAuthenticated => _user != null;
 
-  /// Tenta restaurar uma sessão existente. Qualquer falha vira "sem sessão".
+  /// Qualquer falha vira "sem sessão".
   Future<void> restore() async {
     try {
       _user = await _getCurrentUser();

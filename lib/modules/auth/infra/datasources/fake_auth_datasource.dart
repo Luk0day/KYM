@@ -2,7 +2,6 @@ import '../../domain/errors/auth_failure.dart';
 import '../models/auth_user_model.dart';
 import 'auth_datasource.dart';
 
-/// Conta de teste usada pelo [FakeAuthDataSource].
 class FakeAuthAccount {
   const FakeAuthAccount({
     required this.id,
@@ -19,10 +18,7 @@ class FakeAuthAccount {
   final String? displayName;
 }
 
-/// Implementação em memória de [AuthDataSource].
-///
-/// Permite desenvolver e testar o login sem o Supabase configurado.
-/// Para usar no app, defina `USE_FAKE_AUTH=true` no `.env`.
+/// Existe para desenvolver e testar o login sem o Supabase configurado.
 class FakeAuthDataSource implements AuthDataSource {
   FakeAuthDataSource({
     List<FakeAuthAccount>? accounts,
@@ -55,7 +51,6 @@ class FakeAuthDataSource implements AuthDataSource {
 
   final List<FakeAuthAccount> _accounts;
 
-  /// Atraso simulado das operações. Use [Duration.zero] em testes.
   final Duration latency;
 
   /// Quando definido, a próxima operação falha com este tipo e o valor é

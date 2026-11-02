@@ -5,7 +5,6 @@ import '../auth/presenter/controllers/session_controller.dart';
 import 'home_routes.dart';
 import 'presenter/pages/home_page.dart';
 
-/// Área autenticada (provisória, até as telas reais existirem).
 class HomeModule extends Module {
   @override
   String? get path => HomeRoutes.root;
@@ -14,7 +13,6 @@ class HomeModule extends Module {
   void register(ModularContext c) {
     c.route(
       '/',
-      // Sem sessão, volta para o login.
       guards: [
         (_) => inject<SessionController>().isAuthenticated
             ? null

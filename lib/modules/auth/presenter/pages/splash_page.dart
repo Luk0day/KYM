@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../controllers/session_controller.dart';
 
-/// Tela inicial: restaura a sessão e informa se há usuário autenticado.
 class SplashPage extends StatefulWidget {
   const SplashPage({
     super.key,
@@ -12,7 +11,6 @@ class SplashPage extends StatefulWidget {
 
   final SessionController session;
 
-  /// Chamado uma vez, com `true` se existe uma sessão válida.
   final ValueChanged<bool> onResolved;
 
   @override

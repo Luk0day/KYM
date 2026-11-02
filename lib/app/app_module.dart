@@ -5,10 +5,8 @@ import '../modules/auth/infra/datasources/auth_datasource.dart';
 import '../modules/home/home_module.dart';
 import '../modules/home/home_routes.dart';
 
-/// Módulo raiz: só compõe os módulos de funcionalidade.
-///
-/// [authDataSourceFactory] define qual [AuthDataSource] o app usa (Supabase
-/// ou fake). Em testes, passe um fake direto.
+/// A fábrica do datasource é injetada para que testes e o modo fake troquem o
+/// Supabase sem alterar os módulos.
 class AppModule extends Module {
   AppModule({required this.authDataSourceFactory});
 

@@ -1,4 +1,3 @@
-/// Validações de formulário do login. Retornam null quando o valor é válido.
 abstract final class LoginValidators {
   static final RegExp _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 

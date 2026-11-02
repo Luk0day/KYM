@@ -12,14 +12,11 @@ import 'presenter/controllers/session_controller.dart';
 import 'presenter/pages/login_page.dart';
 import 'presenter/pages/splash_page.dart';
 
-/// Autenticação: injeção de dependências + rotas de splash e login.
+/// Sem `path`: as dependências são compartilhadas (vivem o app todo) e as
+/// rotas ficam na raiz.
 ///
-/// Não tem `path`, então as dependências são compartilhadas (vivem o app todo)
-/// e as rotas ficam na raiz.
-///
-/// - [dataSourceFactory]: quem fornece o [AuthDataSource]. É aqui que se troca
-///   Supabase por um fake, sem o módulo conhecer nenhum dos dois.
-/// - [authenticatedRoute]: para onde ir depois de autenticar.
+/// [dataSourceFactory] e [authenticatedRoute] vêm por parâmetro para o módulo
+/// não conhecer o Supabase, o fake nem o módulo Home.
 class AuthModule extends Module {
   AuthModule({
     required this.dataSourceFactory,

@@ -1,6 +1,5 @@
 import '../../domain/errors/auth_failure.dart';
 
-/// Mensagens claras, em português, para cada tipo de falha de autenticação.
 extension AuthFailureMessage on AuthFailureType {
   String get userMessage {
     switch (this) {
