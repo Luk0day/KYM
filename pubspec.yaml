@@ -37,6 +37,7 @@ dependencies:
   supabase_flutter: ^2.18.3
   flutter_dotenv: ^6.0.1
   flutter_modular: ^7.1.1
+  flutter_svg: ^2.3.2
   flutter_secure_storage: ^11.2.0
   shared_preferences: ^2.5.6
 
@@ -61,6 +62,13 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  fonts:
+    - family: Lato
+      fonts:
+        - asset: assets/fonts/Lato-Regular.ttf
+        - asset: assets/fonts/Lato-Bold.ttf
+          weight: 700
 
   assets:
     - .env
