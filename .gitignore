@@ -49,3 +49,6 @@ app.*.map.json
 
 # Segredos locais
 .env
+
+# Código gerado (Drift). Gere com: dart run build_runner build
+*.g.dart
