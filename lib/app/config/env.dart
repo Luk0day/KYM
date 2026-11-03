@@ -4,4 +4,8 @@ class Env {
   static String get supabaseUrl => dotenv.env['SUPABASE_URL']!;
   static String get supabasePublishableKey =>
       dotenv.env['SUPABASE_PUBLISHABLE_KEY']!;
+
+  /// Permite rodar o app antes de o Supabase estar configurado na nuvem.
+  static bool get useFakeAuth =>
+      dotenv.env['USE_FAKE_AUTH']?.trim().toLowerCase() == 'true';
 }

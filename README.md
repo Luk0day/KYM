@@ -34,8 +34,8 @@ Projeto desenvolvido para a disciplina **Programação para Dispositivos Móveis
 - **Flutter / Dart:** desenvolvimento do aplicativo para Android e iOS.
 - **Supabase:** autenticação, banco de dados PostgreSQL remoto e armazenamento de arquivos.
 - **Drift / SQLite:** armazenamento local para suporte ao uso offline.
-- **Riverpod:** gerenciamento de estado e dependências.
-- **go_router:** navegação entre telas.
+- **Flutter Modular:** modularização por funcionalidade, injeção de dependências e navegação entre telas.
+- **ChangeNotifier:** gerenciamento de estado das telas, com escopo de página fornecido pelo Modular.
 - **OpenStreetMap / flutter_map:** exibição de mapas.
 
 Outros pacotes serão incorporados conforme as funcionalidades forem implementadas.
