@@ -5,14 +5,47 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/errors/auth_failure.dart';
 import '../../infra/datasources/auth_datasource.dart';
+import '../../infra/datasources/google_id_token_provider.dart';
 import '../../infra/models/auth_user_model.dart';
 
 class SupabaseAuthDataSource implements AuthDataSource {
-  SupabaseAuthDataSource(this._client);
+  SupabaseAuthDataSource(this._client, {this._googleProvider});
 
   final SupabaseClient _client;
+  final GoogleIdTokenProvider? _googleProvider;
 
   static const String _profilesTable = 'profiles';
+
+  @override
+  Future<AuthUserModel> signInWithGoogle() async {
+    final provider = _googleProvider;
+    if (provider == null) {
+      throw const AuthFailure(AuthFailureType.unexpected);
+    }
+
+    try {
+      return await _execute(() async {
+        final idToken = await provider.fetchIdToken();
+
+        final response = await _client.auth.signInWithIdToken(
+          provider: OAuthProvider.google,
+          idToken: idToken,
+        );
+
+        final user = response.user;
+
+        if (user == null) {
+          throw const AuthFailure(AuthFailureType.unexpected);
+        }
+
+        // O perfil é criado pelo trigger handle_new_user no primeiro acesso.
+        return _fetchUserProfile(userId: user.id, email: user.email ?? '');
+      });
+    } on AuthFailure catch (failure) {
+      await _clearSessionIfProfileIsInvalid(failure);
+      rethrow;
+    }
+  }
 
   @override
   Future<AuthUserModel> signInWithEmail({
@@ -70,6 +103,7 @@ class SupabaseAuthDataSource implements AuthDataSource {
   Future<void> signOut() {
     return _execute(() async {
       await _client.auth.signOut();
+      await _googleProvider?.signOut();
     });
   }
 

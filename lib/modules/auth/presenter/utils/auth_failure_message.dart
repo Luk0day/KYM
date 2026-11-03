@@ -16,6 +16,8 @@ extension AuthFailureMessage on AuthFailureType {
       case AuthFailureType.network:
         return 'Sem conexão com o servidor. '
             'Verifique sua internet e tente novamente.';
+      case AuthFailureType.cancelled:
+        return 'Login cancelado.';
       case AuthFailureType.unexpected:
         return 'Algo deu errado ao entrar. Tente novamente em instantes.';
     }
