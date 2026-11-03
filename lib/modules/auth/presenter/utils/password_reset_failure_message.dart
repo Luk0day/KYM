@@ -12,6 +12,7 @@ extension PasswordResetFailureMessage on AuthFailureType {
       case AuthFailureType.invalidCredentials:
       case AuthFailureType.profileNotFound:
       case AuthFailureType.invalidProfile:
+      case AuthFailureType.cancelled:
       case AuthFailureType.accessDenied:
       case AuthFailureType.unexpected:
         return 'Não foi possível enviar o e-mail de recuperação. '
