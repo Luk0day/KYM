@@ -4,14 +4,17 @@ import 'package:flutter_modular/flutter_modular.dart' show ModularStateX;
 import '../../domain/entities/authenticated_user.dart';
 import '../controllers/login_controller.dart';
 import '../utils/login_validators.dart';
+import '../widgets/feedback_banner.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({
     super.key,
     required this.onAuthenticated,
+    required this.onForgotPassword,
   });
 
   final ValueChanged<AuthenticatedUser> onAuthenticated;
+  final VoidCallback onForgotPassword;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -110,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 32),
             if (errorMessage != null) ...[
-              _ErrorBanner(message: errorMessage),
+              FeedbackBanner.error(message: errorMessage),
               const SizedBox(height: 16),
             ],
             TextFormField(
@@ -157,7 +160,14 @@ class _LoginPageState extends State<LoginPage> {
               onChanged: (_) => _controller.clearError(),
               onFieldSubmitted: (_) => _submit(),
             ),
-            const SizedBox(height: 24),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: isLoading ? null : widget.onForgotPassword,
+                child: const Text('Esqueci minha senha'),
+              ),
+            ),
+            const SizedBox(height: 8),
             FilledButton(
               onPressed: isLoading ? null : _submit,
               child: Padding(
@@ -169,41 +179,6 @@ class _LoginPageState extends State<LoginPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text('Entrar'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colors.errorContainer,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.error_outline, color: colors.onErrorContainer),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(color: colors.onErrorContainer),
               ),
             ),
           ],

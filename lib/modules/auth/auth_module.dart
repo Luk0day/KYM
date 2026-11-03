@@ -3,12 +3,15 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'auth_routes.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/usecases/get_current_user.dart';
+import 'domain/usecases/send_password_reset_email.dart';
 import 'domain/usecases/sign_in_with_email.dart';
 import 'domain/usecases/sign_out.dart';
 import 'infra/datasources/auth_datasource.dart';
 import 'infra/repositories/auth_repository_impl.dart';
+import 'presenter/controllers/forgot_password_controller.dart';
 import 'presenter/controllers/login_controller.dart';
 import 'presenter/controllers/session_controller.dart';
+import 'presenter/pages/forgot_password_page.dart';
 import 'presenter/pages/login_page.dart';
 import 'presenter/pages/splash_page.dart';
 
@@ -34,6 +37,7 @@ class AuthModule extends Module {
       ..addLazySingleton<SignInWithEmail>(SignInWithEmail.new)
       ..addLazySingleton<GetCurrentUser>(GetCurrentUser.new)
       ..addLazySingleton<SignOut>(SignOut.new)
+      ..addLazySingleton<SendPasswordResetEmail>(SendPasswordResetEmail.new)
       ..addLazySingleton<SessionController>(SessionController.new)
       ..route(
         AuthRoutes.splash,
@@ -57,6 +61,18 @@ class AuthModule extends Module {
             inject<SessionController>().start(user);
             context.navigate(authenticatedRoute);
           },
+          onForgotPassword: () => context.navigate(AuthRoutes.forgotPassword),
+        ),
+      )
+      ..route(
+        AuthRoutes.forgotPassword,
+        provide: (scoped) {
+          scoped.addChangeNotifier<ForgotPasswordController>(
+            ForgotPasswordController.new,
+          );
+        },
+        child: (context, _) => ForgotPasswordPage(
+          onBackToLogin: () => context.navigate(AuthRoutes.login),
         ),
       );
   }
