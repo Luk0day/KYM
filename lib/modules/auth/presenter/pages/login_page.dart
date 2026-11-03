@@ -11,7 +11,6 @@ import '../../../../shared/presenter/widgets/kym_text_field.dart';
 import '../../domain/entities/authenticated_user.dart';
 import '../controllers/login_controller.dart';
 import '../utils/login_validators.dart';
-import '../widgets/feedback_banner.dart';
 import '../widgets/google_logo.dart';
 
 class LoginPage extends StatefulWidget {
