@@ -45,13 +45,16 @@ class KymButton extends StatelessWidget {
   }
 
   Widget _buildContent() {
-    final text = Text(label);
     if (leading == null) {
-      return text;
+      return Text(label, textAlign: TextAlign.center);
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [leading!, const SizedBox(width: 10), text],
+      children: [
+        leading!,
+        const SizedBox(width: 10),
+        Flexible(child: Text(label, textAlign: TextAlign.center)),
+      ],
     );
   }
 

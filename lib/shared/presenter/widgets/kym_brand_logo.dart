@@ -16,8 +16,7 @@ class KymBrandLogo extends StatelessWidget {
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 'KYM',
@@ -27,8 +26,11 @@ class KymBrandLogo extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
+              // Alinhamento por baseline quebra o cálculo de altura da tela de
+              // login (DecoratedBox não calcula baseline). O 11 é o descendente
+              // da Lato em 34sp (~7) somado aos 4 de elevação do mock.
               const Padding(
-                padding: EdgeInsets.only(bottom: 4),
+                padding: EdgeInsets.only(bottom: 11),
                 child: SizedBox(
                   width: 7,
                   height: 7,
