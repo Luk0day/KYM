@@ -5,7 +5,7 @@
 **Aplicativo de campo para quem faz manutenção em lojas.**
 QR Code, checklist, fotos, assinatura e comprovante em PDF — tudo funcionando offline.
 
-[![CI](https://github.com/Luk0day/Projeto-Final-Mobile/actions/workflows/ci.yml/badge.svg)](https://github.com/Luk0day/Projeto-Final-Mobile/actions/workflows/ci.yml)
+[![CI](https://github.com/Luk0day/KYM/actions/workflows/ci.yml/badge.svg)](https://github.com/Luk0day/KYM/actions/workflows/ci.yml)
 ![Flutter](https://img.shields.io/badge/Flutter-stable-02569B?logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-%5E3.13-0175C2?logo=dart&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-backend-3ECF8E?logo=supabase&logoColor=white)
@@ -164,8 +164,8 @@ test/                       # testes de unidade e de widget
 **1. Clone e instale as dependências**
 
 ```bash
-git clone https://github.com/Luk0day/Projeto-Final-Mobile.git
-cd Projeto-Final-Mobile
+git clone https://github.com/Luk0day/KYM.git
+cd KYM
 flutter pub get
 ```
 
