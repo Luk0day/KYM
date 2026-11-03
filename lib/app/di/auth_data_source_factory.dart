@@ -10,5 +10,8 @@ AuthDataSource createAuthDataSource() {
   if (Env.useFakeAuth) {
     return FakeAuthDataSource(sessionStore: SecureKeyValueStore());
   }
-  return SupabaseAuthDataSource(Supabase.instance.client);
+  return SupabaseAuthDataSource(
+    Supabase.instance.client,
+    passwordResetRedirectUrl: Env.passwordResetRedirectUrl,
+  );
 }

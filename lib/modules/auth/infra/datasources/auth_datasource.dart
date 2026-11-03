@@ -12,4 +12,6 @@ abstract interface class AuthDataSource {
   Future<AuthUserModel?> getCurrentUser();
 
   Future<void> signOut();
+
+  Future<void> sendPasswordResetEmail({required String email});
 }

@@ -56,6 +56,8 @@ class FakeAuthDataSource implements AuthDataSource {
   final KeyValueStore _sessionStore;
   final Duration latency;
 
+  final List<String> passwordResetRequests = [];
+
   AuthFailureType? nextFailure;
 
   AuthUserModel? _currentUser;
@@ -100,6 +102,13 @@ class FakeAuthDataSource implements AuthDataSource {
     await _simulateLatency();
     _currentUser = null;
     await _sessionStore.delete(StorageKeys.fakeSessionUserId);
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    await _simulateLatency();
+    _throwIfFailureScheduled();
+    passwordResetRequests.add(email.trim());
   }
 
   AuthUserModel _toModel(FakeAuthAccount account) {

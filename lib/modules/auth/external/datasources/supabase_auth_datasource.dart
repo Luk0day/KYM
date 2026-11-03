@@ -8,11 +8,16 @@ import '../../infra/datasources/auth_datasource.dart';
 import '../../infra/models/auth_user_model.dart';
 
 class SupabaseAuthDataSource implements AuthDataSource {
-  SupabaseAuthDataSource(this._client);
+  SupabaseAuthDataSource(this._client, {this.passwordResetRedirectUrl});
 
   final SupabaseClient _client;
+  final String? passwordResetRedirectUrl;
 
   static const String _profilesTable = 'profiles';
+  static const Set<String> _rateLimitCodes = {
+    'over_email_send_rate_limit',
+    'over_request_rate_limit',
+  };
 
   @override
   Future<AuthUserModel> signInWithEmail({
@@ -70,6 +75,16 @@ class SupabaseAuthDataSource implements AuthDataSource {
   Future<void> signOut() {
     return _execute(() async {
       await _client.auth.signOut();
+    });
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) {
+    return _execute(() async {
+      await _client.auth.resetPasswordForEmail(
+        email.trim(),
+        redirectTo: passwordResetRedirectUrl,
+      );
     });
   }
 
@@ -138,6 +153,10 @@ class SupabaseAuthDataSource implements AuthDataSource {
   AuthFailure _mapAuthException(AuthException error) {
     final code = error.code?.toLowerCase();
     final message = error.message.toLowerCase();
+
+    if (error.statusCode == '429' || _rateLimitCodes.contains(code)) {
+      return const AuthFailure(AuthFailureType.rateLimited);
+    }
 
     if (code == 'invalid_credentials' ||
         message.contains('invalid login credentials')) {

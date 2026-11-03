@@ -4,6 +4,7 @@ enum AuthFailureType {
   invalidProfile,
   accessDenied,
   network,
+  rateLimited,
   unexpected,
 }
 

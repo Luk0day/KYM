@@ -39,6 +39,11 @@ class AuthRepositoryImpl implements AuthRepository {
     return _dataSource.signOut();
   }
 
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) {
+    return _dataSource.sendPasswordResetEmail(email: email);
+  }
+
   AuthenticatedUser _toEntity(AuthUserModel model) {
     final id = model.id.trim();
     final email = model.email.trim();
