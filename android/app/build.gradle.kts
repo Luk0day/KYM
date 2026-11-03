@@ -29,6 +29,17 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        // Keystore de debug compartilhada (android/app/debug.keystore): todos do
+        // grupo assinam com o mesmo SHA-1, o que o Google Sign-In exige.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

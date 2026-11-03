@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Keystore de DEBUG compartilhada pelo grupo (sem valor de segurança): faz todos
+# assinarem com o mesmo SHA-1, cadastrado no Google Cloud para o Google Sign-In.
+# Nunca versionar a chave de release.
+!app/debug.keystore
