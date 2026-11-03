@@ -1,3 +1,5 @@
+import '../../../../app/storage/key_value_store.dart';
+import '../../../../app/storage/storage_keys.dart';
 import '../../domain/errors/auth_failure.dart';
 import '../models/auth_user_model.dart';
 import 'auth_datasource.dart';
@@ -18,12 +20,13 @@ class FakeAuthAccount {
   final String? displayName;
 }
 
-/// Existe para desenvolver e testar o login sem o Supabase configurado.
 class FakeAuthDataSource implements AuthDataSource {
   FakeAuthDataSource({
     List<FakeAuthAccount>? accounts,
     this.latency = const Duration(milliseconds: 600),
-  }) : _accounts = accounts ?? defaultAccounts;
+    KeyValueStore? sessionStore,
+  }) : _accounts = accounts ?? defaultAccounts,
+       _sessionStore = sessionStore ?? InMemoryKeyValueStore();
 
   static const List<FakeAuthAccount> defaultAccounts = [
     FakeAuthAccount(
@@ -50,11 +53,9 @@ class FakeAuthDataSource implements AuthDataSource {
   ];
 
   final List<FakeAuthAccount> _accounts;
-
+  final KeyValueStore _sessionStore;
   final Duration latency;
 
-  /// Quando definido, a próxima operação falha com este tipo e o valor é
-  /// limpo em seguida. Útil para simular rede fora do ar, perfil ausente etc.
   AuthFailureType? nextFailure;
 
   AuthUserModel? _currentUser;
@@ -76,6 +77,7 @@ class FakeAuthDataSource implements AuthDataSource {
       throw const AuthFailure(AuthFailureType.invalidCredentials);
     }
 
+    await _sessionStore.write(StorageKeys.fakeSessionUserId, account.id);
     return _currentUser = _toModel(account);
   }
 
@@ -83,13 +85,21 @@ class FakeAuthDataSource implements AuthDataSource {
   Future<AuthUserModel?> getCurrentUser() async {
     await _simulateLatency();
     _throwIfFailureScheduled();
-    return _currentUser;
+
+    if (_currentUser != null) {
+      return _currentUser;
+    }
+
+    final savedId = await _sessionStore.read(StorageKeys.fakeSessionUserId);
+    final account = _accounts.where((item) => item.id == savedId).firstOrNull;
+    return _currentUser = account == null ? null : _toModel(account);
   }
 
   @override
   Future<void> signOut() async {
     await _simulateLatency();
     _currentUser = null;
+    await _sessionStore.delete(StorageKeys.fakeSessionUserId);
   }
 
   AuthUserModel _toModel(FakeAuthAccount account) {

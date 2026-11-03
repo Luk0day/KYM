@@ -7,16 +7,19 @@ import 'app/app.dart';
 import 'app/app_module.dart';
 import 'app/config/env.dart';
 import 'app/di/auth_data_source_factory.dart';
+import 'app/di/session_storage_factory.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
 
-  // Com USE_FAKE_AUTH=true o Supabase nem precisa estar configurado.
   if (!Env.useFakeAuth) {
     await Supabase.initialize(
       url: Env.supabaseUrl,
       publishableKey: Env.supabasePublishableKey,
+      authOptions: FlutterAuthClientOptions(
+        localStorage: createSessionStorage(Env.supabaseUrl),
+      ),
     );
   }
 
