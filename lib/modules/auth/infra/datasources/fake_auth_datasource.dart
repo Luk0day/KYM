@@ -81,6 +81,17 @@ class FakeAuthDataSource implements AuthDataSource {
     return _currentUser = _toModel(account);
   }
 
+  /// Simula a conta Google do técnico de teste.
+  @override
+  Future<AuthUserModel> signInWithGoogle() async {
+    await _simulateLatency();
+    _throwIfFailureScheduled();
+
+    final account = _accounts.first;
+    await _sessionStore.write(StorageKeys.fakeSessionUserId, account.id);
+    return _currentUser = _toModel(account);
+  }
+
   @override
   Future<AuthUserModel?> getCurrentUser() async {
     await _simulateLatency();
