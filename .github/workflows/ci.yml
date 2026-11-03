@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # o .env real não vai para o git; o modelo basta para analyze e test
+      - run: cp .env.example .env
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
