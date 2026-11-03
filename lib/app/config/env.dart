@@ -9,6 +9,10 @@ class Env {
     final value = dotenv.env['PASSWORD_RESET_REDIRECT_URL']?.trim();
     return (value == null || value.isEmpty) ? null : value;
   }
+  /// Client ID do cliente OAuth **Web** do Google Cloud (o mesmo usado no
+  /// provedor Google do Supabase). Vazio desativa o login com Google.
+  static String get googleWebClientId =>
+      dotenv.env['GOOGLE_WEB_CLIENT_ID']?.trim() ?? '';
 
   /// Permite rodar o app antes de o Supabase estar configurado na nuvem.
   static bool get useFakeAuth =>

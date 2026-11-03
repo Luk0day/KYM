@@ -19,6 +19,8 @@ extension AuthFailureMessage on AuthFailureType {
       case AuthFailureType.rateLimited:
         return 'Muitas tentativas em pouco tempo. '
             'Aguarde alguns minutos e tente novamente.';
+      case AuthFailureType.cancelled:
+        return 'Login cancelado.';
       case AuthFailureType.unexpected:
         return 'Algo deu errado ao entrar. Tente novamente em instantes.';
     }

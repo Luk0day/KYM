@@ -8,6 +8,10 @@ import 'package:kym/modules/auth/presenter/utils/auth_failure_message.dart';
 import 'package:kym/modules/auth/domain/errors/auth_failure.dart';
 
 Future<void> _pumpApp(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
   await tester.pumpWidget(
     ModularApp(
       module: AppModule(
@@ -36,6 +40,64 @@ void main() {
     await _pumpApp(tester);
 
     expect(find.byType(TextFormField), findsNWidgets(2));
+  });
+
+  testWidgets('login mostra os elementos do design', (tester) async {
+    await _pumpApp(tester);
+
+    expect(find.text('KYM'), findsOneWidget);
+    expect(find.text('Know Your Maintenance'), findsOneWidget);
+    expect(find.text('Entrar'), findsNWidgets(2));
+    expect(find.text('Acesse com sua conta para continuar'), findsOneWidget);
+    expect(find.text('Esqueci minha senha'), findsOneWidget);
+    expect(find.text('Continuar com Google'), findsOneWidget);
+    expect(
+      find.text('Funciona offline · seus dados ficam sincronizados'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('campos vazios mostram erro de validação', (tester) async {
+    await _pumpApp(tester);
+
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Informe seu e-mail.'), findsOneWidget);
+    expect(find.text('Informe sua senha.'), findsOneWidget);
+  });
+
+  testWidgets('botão de olho mostra e oculta a senha', (tester) async {
+    await _pumpApp(tester);
+
+    bool isObscured() =>
+        tester.widget<EditableText>(find.byType(EditableText).at(1)).obscureText;
+
+    expect(isObscured(), isTrue);
+
+    await tester.tap(find.byIcon(Icons.visibility_off_rounded));
+    await tester.pump();
+
+    expect(isObscured(), isFalse);
+    expect(find.byIcon(Icons.visibility_rounded), findsOneWidget);
+  });
+
+  testWidgets('continuar com Google leva à área autenticada', (tester) async {
+    await _pumpApp(tester);
+
+    await tester.tap(find.text('Continuar com Google'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Olá, Técnico Teste'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
+  });
+
+  testWidgets('recuperação de senha avisa que vem em breve', (tester) async {
+    await _pumpApp(tester);
+
+    await tester.tap(find.text('Esqueci minha senha'));
+    await tester.pump();
+    expect(find.text('Recuperação de senha em breve.'), findsOneWidget);
   });
 
   testWidgets('login válido leva à área autenticada', (tester) async {
