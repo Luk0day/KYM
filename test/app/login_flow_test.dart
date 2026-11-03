@@ -82,13 +82,18 @@ void main() {
     expect(find.byIcon(Icons.visibility_rounded), findsOneWidget);
   });
 
-  testWidgets('Google e recuperação de senha avisam que vêm em breve',
-      (tester) async {
+  testWidgets('continuar com Google leva à área autenticada', (tester) async {
     await _pumpApp(tester);
 
     await tester.tap(find.text('Continuar com Google'));
-    await tester.pump();
-    expect(find.text('Login com Google em breve.'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Olá, Técnico Teste'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
+  });
+
+  testWidgets('recuperação de senha avisa que vem em breve', (tester) async {
+    await _pumpApp(tester);
 
     await tester.tap(find.text('Esqueci minha senha'));
     await tester.pump();

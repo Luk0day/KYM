@@ -8,6 +8,11 @@ abstract interface class AuthRepository {
     required String password,
   });
 
+  /// Entra com a conta Google escolhida pelo usuário (Google Sign-In + Supabase
+  /// Auth). Retorna o usuário com perfil válido no KYM.
+  /// Lança [AuthFailure] com `cancelled` se o usuário desistir da escolha.
+  Future<AuthenticatedUser> signInWithGoogle();
+
   /// Retorna null quando não existe uma sessão autenticada.
   /// Se existir uma sessão, mas não for possível validar o perfil,
   /// a implementação deverá comunicar a falha correspondente.

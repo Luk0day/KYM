@@ -4,6 +4,7 @@ import 'package:kym/modules/auth/domain/errors/auth_failure.dart';
 import 'package:kym/modules/auth/infra/datasources/fake_auth_datasource.dart';
 import 'package:kym/modules/auth/presenter/controllers/login_controller.dart';
 import 'package:kym/modules/auth/domain/usecases/sign_in_with_email.dart';
+import 'package:kym/modules/auth/domain/usecases/sign_in_with_google.dart';
 import 'package:kym/modules/auth/infra/repositories/auth_repository_impl.dart';
 import 'package:kym/modules/auth/presenter/utils/auth_failure_message.dart';
 import 'package:kym/modules/auth/presenter/utils/login_validators.dart';
@@ -16,10 +17,38 @@ void main() {
     dataSource = FakeAuthDataSource(latency: Duration.zero);
     controller = LoginController(
       SignInWithEmail(AuthRepositoryImpl(dataSource)),
+      SignInWithGoogle(AuthRepositoryImpl(dataSource)),
     );
   });
 
   tearDown(() => controller.dispose());
+
+  test('autentica com a conta Google', () async {
+    await controller.submitWithGoogle();
+
+    expect(controller.status, LoginStatus.success);
+    expect(controller.user?.role, UserRole.tecnico);
+    expect(controller.errorMessage, isNull);
+  });
+
+  test('desistir da conta Google volta ao login sem erro', () async {
+    dataSource.nextFailure = AuthFailureType.cancelled;
+
+    await controller.submitWithGoogle();
+
+    expect(controller.status, LoginStatus.idle);
+    expect(controller.errorMessage, isNull);
+    expect(controller.user, isNull);
+  });
+
+  test('falha do Google mostra erro claro', () async {
+    dataSource.nextFailure = AuthFailureType.unexpected;
+
+    await controller.submitWithGoogle();
+
+    expect(controller.status, LoginStatus.failure);
+    expect(controller.errorMessage, AuthFailureType.unexpected.userMessage);
+  });
 
   test('autentica com credenciais válidas', () async {
     await controller.submit(email: ' tecnico@kym.test ', password: 'kym12345');

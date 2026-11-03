@@ -71,6 +71,11 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Future<void> _submitWithGoogle() async {
+    FocusScope.of(context).unfocus();
+    await _controller.submitWithGoogle();
+  }
+
   void _showComingSoon(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -206,9 +211,7 @@ class _LoginPageState extends State<LoginPage> {
             label: 'Continuar com Google',
             variant: KymButtonVariant.secondary,
             leading: const GoogleLogo(),
-            onPressed: isLoading
-                ? null
-                : () => _showComingSoon('Login com Google em breve.'),
+            onPressed: isLoading ? null : _submitWithGoogle,
           ),
           const Spacer(),
           const _OfflineNote(),

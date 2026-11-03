@@ -4,6 +4,7 @@ import 'auth_routes.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/usecases/get_current_user.dart';
 import 'domain/usecases/sign_in_with_email.dart';
+import 'domain/usecases/sign_in_with_google.dart';
 import 'domain/usecases/sign_out.dart';
 import 'infra/datasources/auth_datasource.dart';
 import 'infra/repositories/auth_repository_impl.dart';
@@ -32,6 +33,7 @@ class AuthModule extends Module {
       ..addLazySingleton<AuthDataSource>(dataSourceFactory)
       ..addLazySingleton<AuthRepository>(AuthRepositoryImpl.new)
       ..addLazySingleton<SignInWithEmail>(SignInWithEmail.new)
+      ..addLazySingleton<SignInWithGoogle>(SignInWithGoogle.new)
       ..addLazySingleton<GetCurrentUser>(GetCurrentUser.new)
       ..addLazySingleton<SignOut>(SignOut.new)
       ..addLazySingleton<SessionController>(SessionController.new)
