@@ -22,7 +22,10 @@ class LoginController extends ChangeNotifier {
   AuthenticatedUser? get user => _user;
   bool get isLoading => _status == LoginStatus.loading;
 
-  Future<void> submit({required String email, required String password}) async {
+  Future<void> submit({
+    required String email,
+    required String password,
+  }) async {
     if (isLoading) {
       return;
     }
