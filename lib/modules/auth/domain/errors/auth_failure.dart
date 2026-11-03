@@ -4,6 +4,7 @@ enum AuthFailureType {
   invalidProfile,
   accessDenied,
   network,
+  rateLimited,
 
   /// O usuário fechou a seleção de conta do Google. Não é um erro a exibir.
   cancelled,

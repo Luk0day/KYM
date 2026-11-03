@@ -16,6 +16,7 @@ AuthDataSource createAuthDataSource() {
 
   return SupabaseAuthDataSource(
     Supabase.instance.client,
+    passwordResetRedirectUrl: Env.passwordResetRedirectUrl,
     googleProvider: webClientId.isEmpty
         ? null
         : GoogleSignInIdTokenProvider(serverClientId: webClientId),

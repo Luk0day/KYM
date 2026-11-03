@@ -92,14 +92,6 @@ void main() {
     expect(find.byType(TextFormField), findsNothing);
   });
 
-  testWidgets('recuperação de senha avisa que vem em breve', (tester) async {
-    await _pumpApp(tester);
-
-    await tester.tap(find.text('Esqueci minha senha'));
-    await tester.pump();
-    expect(find.text('Recuperação de senha em breve.'), findsOneWidget);
-  });
-
   testWidgets('login válido leva à área autenticada', (tester) async {
     await _pumpApp(tester);
 

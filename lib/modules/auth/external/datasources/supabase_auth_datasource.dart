@@ -9,12 +9,17 @@ import '../../infra/datasources/google_id_token_provider.dart';
 import '../../infra/models/auth_user_model.dart';
 
 class SupabaseAuthDataSource implements AuthDataSource {
-  SupabaseAuthDataSource(this._client, {this._googleProvider});
+  SupabaseAuthDataSource(this._client, {this.passwordResetRedirectUrl, this._googleProvider});
 
   final SupabaseClient _client;
+  final String? passwordResetRedirectUrl;
   final GoogleIdTokenProvider? _googleProvider;
 
   static const String _profilesTable = 'profiles';
+  static const Set<String> _rateLimitCodes = {
+    'over_email_send_rate_limit',
+    'over_request_rate_limit',
+  };
 
   @override
   Future<AuthUserModel> signInWithGoogle() async {
@@ -107,6 +112,16 @@ class SupabaseAuthDataSource implements AuthDataSource {
     });
   }
 
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) {
+    return _execute(() async {
+      await _client.auth.resetPasswordForEmail(
+        email.trim(),
+        redirectTo: passwordResetRedirectUrl,
+      );
+    });
+  }
+
   Future<AuthUserModel> _fetchUserProfile({
     required String userId,
     required String email,
@@ -172,6 +187,10 @@ class SupabaseAuthDataSource implements AuthDataSource {
   AuthFailure _mapAuthException(AuthException error) {
     final code = error.code?.toLowerCase();
     final message = error.message.toLowerCase();
+
+    if (error.statusCode == '429' || _rateLimitCodes.contains(code)) {
+      return const AuthFailure(AuthFailureType.rateLimited);
+    }
 
     if (code == 'invalid_credentials' ||
         message.contains('invalid login credentials')) {
