@@ -56,6 +56,13 @@ abstract final class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
+  static const TextStyle navLabel = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondary,
+  );
+
   static const TextStyle highlightNumber = TextStyle(
     fontFamily: fontFamily,
     fontSize: 34,
