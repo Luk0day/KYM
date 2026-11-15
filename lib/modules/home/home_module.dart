@@ -2,6 +2,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 import '../auth/auth_routes.dart';
 import '../auth/presenter/controllers/session_controller.dart';
+import '../stores/stores_routes.dart';
 import 'home_routes.dart';
 import 'presenter/pages/home_page.dart';
 
@@ -21,6 +22,8 @@ class HomeModule extends Module {
       child: (context, _) => HomePage(
         session: inject<SessionController>(),
         onSignedOut: () => context.navigate(AuthRoutes.login),
+        // Provisório até a casca de navegação (B15).
+        onOpenStores: () => context.navigate(StoresRoutes.root),
       ),
     );
   }

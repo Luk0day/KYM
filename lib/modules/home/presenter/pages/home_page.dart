@@ -8,10 +8,12 @@ class HomePage extends StatelessWidget {
     super.key,
     required this.session,
     required this.onSignedOut,
+    this.onOpenStores,
   });
 
   final SessionController session;
   final VoidCallback onSignedOut;
+  final VoidCallback? onOpenStores;
 
   Future<void> _signOut() async {
     await session.signOut();
@@ -39,10 +41,20 @@ class HomePage extends StatelessWidget {
           body: Center(
             child: user == null
                 ? const SizedBox.shrink()
-                : Text(
-                    'Olá, ${user.displayName ?? user.email}\n'
-                    '(${user.role.name})',
-                    textAlign: TextAlign.center,
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Olá, ${user.displayName ?? user.email}\n'
+                        '(${user.role.name})',
+                        textAlign: TextAlign.center,
+                      ),
+                      if (onOpenStores != null)
+                        TextButton(
+                          onPressed: onOpenStores,
+                          child: const Text('Ver lojas'),
+                        ),
+                    ],
                   ),
           ),
         );
