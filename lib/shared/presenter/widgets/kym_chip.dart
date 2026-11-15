@@ -20,16 +20,20 @@ class KymChip extends StatelessWidget {
     };
 
     return Container(
-      height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      alignment: Alignment.center,
+      // minHeight (e não height) para o selo crescer com a fonte do sistema.
+      constraints: const BoxConstraints(minHeight: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        label.toUpperCase(),
-        style: AppTextStyles.label.copyWith(color: foreground),
+      // widthFactor: 1 mantém o selo do tamanho do texto, mesmo num Wrap.
+      child: Center(
+        widthFactor: 1,
+        child: Text(
+          label.toUpperCase(),
+          style: AppTextStyles.label.copyWith(color: foreground),
+        ),
       ),
     );
   }
