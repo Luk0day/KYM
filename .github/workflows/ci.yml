@@ -1,26 +1,47 @@
-name: CI
+name: Quality CI
 
 on:
-  pull_request:
   push:
-    branches: [main]
+  pull_request:
 
 jobs:
-  analyze-test:
+  quality:
+    name: Code Quality and Tests
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # versão fixa para o CI não quebrar quando sair um Flutter novo
           flutter-version: 3.47.1
           cache: true
 
       # o .env real não vai para o git; o modelo basta para analyze e test
-      - run: cp .env.example .env
+      - name: Create .env from template
+        run: cp .env.example .env
 
-      - run: flutter pub get
-      - run: dart run build_runner build
-      - run: flutter analyze
-      - run: flutter test
+      - name: Install dependencies
+        run: flutter pub get
+
+      # O mocktail não gera código (os mocks são classes escritas à mão nos
+      # testes). O build_runner serve ao Drift, cujos *.g.dart não vão para o git.
+      - name: Generate Drift code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: warn
