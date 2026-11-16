@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_colors.dart';
 
-enum KymButtonVariant { primary, secondary, tertiary, destructive }
+enum KymButtonVariant { primary, secondary, tertiary, destructive, soft }
 
 class KymButton extends StatelessWidget {
   const KymButton({
@@ -41,6 +41,15 @@ class KymButton extends StatelessWidget {
           ),
           child: child,
         );
+      case KymButtonVariant.soft:
+        return FilledButton(
+          onPressed: callback,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.overdueBg,
+            foregroundColor: AppColors.accent,
+          ),
+          child: child,
+        );
     }
   }
 
@@ -74,6 +83,7 @@ class KymButton extends StatelessWidget {
       case KymButtonVariant.primary:
         return Colors.white;
       case KymButtonVariant.destructive:
+      case KymButtonVariant.soft:
         return AppColors.accent;
       case KymButtonVariant.secondary:
       case KymButtonVariant.tertiary:

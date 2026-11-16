@@ -1,3 +1,38 @@
+import '../auth/domain/entities/user_role_permissions.dart';
+
 abstract final class HomeRoutes {
   static const String root = '/home';
+
+  static const String painelPath = '/painel';
+  static const String lojasPath = '/lojas';
+  static const String qrPath = '/qr';
+  static const String agendaPath = '/agenda';
+  static const String qrCodesPath = '/qr-codes';
+  static const String perfilPath = '/perfil';
+
+  static const String painel = '$root$painelPath';
+  static const String lojas = '$root$lojasPath';
+  static const String qr = '$root$qrPath';
+  static const String agenda = '$root$agendaPath';
+  static const String qrCodes = '$root$qrCodesPath';
+  static const String perfil = '$root$perfilPath';
+
+  static String of(AppDestination destination) => switch (destination) {
+    AppDestination.painel => painel,
+    AppDestination.lojas => lojas,
+    AppDestination.qr => qr,
+    AppDestination.agenda => agenda,
+    AppDestination.qrCodes => qrCodes,
+    AppDestination.perfil => perfil,
+  };
+
+  /// Destino da aba que contém [path], inclusive rotas internas dela
+  /// (ex.: /home/lojas/123). Devolve null fora das abas.
+  static AppDestination? destinationOf(String path) {
+    for (final destination in AppDestination.values) {
+      final route = of(destination);
+      if (path == route || path.startsWith('$route/')) return destination;
+    }
+    return null;
+  }
 }
