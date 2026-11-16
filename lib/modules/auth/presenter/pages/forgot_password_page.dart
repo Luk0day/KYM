@@ -6,9 +6,14 @@ import '../utils/login_validators.dart';
 import '../widgets/feedback_banner.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
-  const ForgotPasswordPage({super.key, required this.onBackToLogin});
+  const ForgotPasswordPage({
+    super.key,
+    required this.onBackToLogin,
+    this.notice,
+  });
 
   final VoidCallback onBackToLogin;
+  final String? notice;
 
   @override
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
@@ -84,6 +89,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final errorMessage = _controller.errorMessage;
     final requestedEmail = _controller.requestedEmail;
     final succeeded = _controller.status == ForgotPasswordStatus.success;
+    final notice = _controller.status == ForgotPasswordStatus.idle
+        ? widget.notice
+        : null;
 
     return Form(
       key: _formKey,
@@ -118,6 +126,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ],
             if (errorMessage != null) ...[
               FeedbackBanner.error(message: errorMessage),
+              const SizedBox(height: 16),
+            ],
+            if (notice != null) ...[
+              FeedbackBanner.error(message: notice),
               const SizedBox(height: 16),
             ],
             TextFormField(
