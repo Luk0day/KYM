@@ -27,6 +27,7 @@ QR Code, checklist, fotos, assinatura e comprovante em PDF — tudo funcionando 
 - [Telas](#telas)
 - [Tecnologias](#tecnologias)
 - [Arquitetura](#arquitetura)
+- [Formato do QR Code](#formato-do-qr-code)
 - [Como executar](#como-executar)
 - [Estado atual](#estado-atual)
 - [Contexto acadêmico](#contexto-acadêmico)
@@ -151,10 +152,50 @@ lib/
 │   │   ├── external/       #   Supabase e Google Sign-In
 │   │   └── presenter/      #   páginas, controllers e widgets
 │   └── home/               # página inicial provisória
-└── shared/presenter/widgets/   # componentes base (botão, campo, chip, banner)
+└── shared/
+    ├── domain/             #   formato dos QR Codes (QrPayload)
+    └── presenter/widgets/  #   componentes base (botão, campo, chip, banner)
 
 supabase/migrations/        # schema inicial: tabelas e políticas RLS
 test/                       # testes de unidade e de widget
+```
+
+## Formato do QR Code
+
+Todo QR Code do KYM carrega um texto curto, sem significado fora do app (não é uma URL, então os leitores comuns não abrem o navegador):
+
+```
+kym:1:S:<qr_token>   → loja
+kym:1:E:<qr_token>   → equipamento
+```
+
+| Parte | Significado |
+|---|---|
+| `kym` | Identifica o sistema |
+| `1` | Versão do formato |
+| `S` / `E` | Tipo: loja (*store*) ou equipamento (*equipment*) |
+| `<qr_token>` | uuid da coluna `qr_token` (não o `id`), em minúsculas |
+
+Usar o `qr_token` permite invalidar um QR impresso gerando um token novo, sem mudar o registro. O formato não tem assinatura criptográfica: o token só identifica, e quem autoriza o acesso é o servidor (RLS).
+
+`QrPayload` (`lib/shared/domain/qr_payload.dart`, Dart puro) faz `encode()` e `parse(String)`. O `parse` nunca lança e devolve um `QrParseResult`:
+
+| Resultado | Quando | O app deve |
+|---|---|---|
+| `QrValid` | QR do KYM, de loja ou de equipamento | seguir o fluxo do tipo |
+| `QrForeign` | Qualquer outro texto (URL, texto livre, outro sistema) | recusar |
+| `QrUnsupportedVersion` | Começa com `kym`, mas a versão não é a 1 | pedir para atualizar o app |
+| `QrMalformed` | Começa com `kym` e a versão é 1, mas o tipo ou o uuid são inválidos ou há partes faltando ou sobrando | recusar como QR inválido |
+
+O texto lido é tolerante: espaços (inclusive quebra de linha) e maiúsculas são aceitos, e o token é normalizado para minúsculas.
+
+```dart
+switch (QrPayload.parse(textoLido)) {
+  case QrValid(:final payload): // payload.type e payload.token
+  case QrForeign(): // não é do KYM
+  case QrUnsupportedVersion(:final version): // atualize o app
+  case QrMalformed(): // QR do KYM inválido
+}
 ```
 
 ## Como executar
