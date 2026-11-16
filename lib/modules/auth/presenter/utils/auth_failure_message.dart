@@ -21,6 +21,9 @@ extension AuthFailureMessage on AuthFailureType {
             'Aguarde alguns minutos e tente novamente.';
       case AuthFailureType.cancelled:
         return 'Login cancelado.';
+      case AuthFailureType.weakPassword:
+      case AuthFailureType.samePassword:
+      case AuthFailureType.recoveryLinkInvalid:
       case AuthFailureType.unexpected:
         return 'Algo deu errado ao entrar. Tente novamente em instantes.';
     }

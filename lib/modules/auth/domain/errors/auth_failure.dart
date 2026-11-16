@@ -8,6 +8,9 @@ enum AuthFailureType {
 
   /// O usuário fechou a seleção de conta do Google. Não é um erro a exibir.
   cancelled,
+  weakPassword,
+  samePassword,
+  recoveryLinkInvalid,
   unexpected,
 }
 

@@ -1,0 +1,1 @@
+enum PasswordRecoveryEvent { started, linkInvalid }
