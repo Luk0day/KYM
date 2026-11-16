@@ -6,8 +6,8 @@
 -- O trigger handle_new_user cria o perfil; este script define o papel, as
 -- lojas, os equipamentos, as atribuições e algumas ordens.
 --
--- Rode no SQL Editor (como postgres). Os ids das lojas, equipamentos e ordens
--- são os mesmos do FakeDataSeeder do app, para os dois ambientes baterem.
+-- Rode no SQL Editor (como postgres). Os ids das lojas e equipamentos são os
+-- mesmos do FakeDataSeeder do app, para os dois ambientes baterem.
 --
 -- Atribuições (lojas diferentes por usuário, para testar a RLS):
 --   tecnico  -> Loja Centro e Loja Boa Viagem
