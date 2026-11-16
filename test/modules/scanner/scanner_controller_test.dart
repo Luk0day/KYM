@@ -130,6 +130,38 @@ void main() {
     expect(await controller.openSettings(), isFalse);
   });
 
+  test('falha ao abrir as configurações é sinalizada e some ao conseguir', () async {
+    when(() => settings.open()).thenAnswer((_) async => false);
+    var notified = 0;
+    controller.addListener(() => notified++);
+
+    expect(await controller.openSettings(), isFalse);
+    expect(controller.settingsFailed, isTrue);
+    expect(notified, 1);
+
+    when(() => settings.open()).thenAnswer((_) async => true);
+    expect(await controller.openSettings(), isTrue);
+    expect(controller.settingsFailed, isFalse);
+    expect(notified, 2);
+  });
+
+  test('abrir as configurações com sucesso não notifica à toa', () async {
+    var notified = 0;
+    controller.addListener(() => notified++);
+
+    await controller.openSettings();
+
+    expect(controller.settingsFailed, isFalse);
+    expect(notified, 0);
+  });
+
+  test('erro ao abrir as configurações conta como falha', () async {
+    when(() => settings.open()).thenThrow(Exception('sem tela'));
+
+    expect(await controller.openSettings(), isFalse);
+    expect(controller.settingsFailed, isTrue);
+  });
+
   test('dispose durante o tratamento não notifica depois', () async {
     final gate = Completer<void>();
     when(() => handler.handle(any())).thenAnswer((_) => gate.future);

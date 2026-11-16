@@ -7,17 +7,8 @@ import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/presenter/widgets/kym_banner.dart';
 import '../../../../shared/presenter/widgets/kym_button.dart';
 import '../controllers/scanner_controller.dart';
+import '../widgets/scanner_camera_builder.dart';
 import '../widgets/scanner_camera_view.dart';
-
-/// Monta a câmera da tela. Os testes passam um fake, porque o scanner não
-/// roda fora de um aparelho.
-typedef ScannerCameraBuilder =
-    Widget Function(
-      BuildContext context, {
-      required bool active,
-      required ValueChanged<String> onDetect,
-      required VoidCallback onOpenSettings,
-    });
 
 class ScannerPage extends StatefulWidget {
   const ScannerPage({
@@ -136,6 +127,7 @@ class _InfoPanel extends StatelessWidget {
               : _LegendContent(
                   showStoreLegend: showStoreLegend,
                   failed: controller.lastReadFailed,
+                  settingsFailed: controller.settingsFailed,
                   processing: controller.status == ScannerStatus.processing,
                 ),
         ),
@@ -148,11 +140,13 @@ class _LegendContent extends StatelessWidget {
   const _LegendContent({
     required this.showStoreLegend,
     required this.failed,
+    required this.settingsFailed,
     required this.processing,
   });
 
   final bool showStoreLegend;
   final bool failed;
+  final bool settingsFailed;
   final bool processing;
 
   @override
@@ -168,6 +162,13 @@ class _LegendContent extends StatelessWidget {
         if (failed) ...[
           const KymBanner(
             message: 'Não foi possível tratar este código. Tente ler de novo.',
+          ),
+          const SizedBox(height: 16),
+        ] else if (settingsFailed) ...[
+          const KymBanner(
+            message:
+                'Não foi possível abrir as configurações. Abra-as pelo '
+                'sistema e libere a câmera para o KYM.',
           ),
           const SizedBox(height: 16),
         ],

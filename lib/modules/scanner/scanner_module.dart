@@ -15,6 +15,7 @@ import 'external/services/permission_handler_app_settings_service.dart';
 import 'infra/services/pending_scanned_code_handler.dart';
 import 'presenter/controllers/scanner_controller.dart';
 import 'presenter/pages/scanner_page.dart';
+import 'presenter/widgets/scanner_camera_builder.dart';
 import 'scanner_routes.dart';
 
 /// Leitor de QR Code (tela 7), aberto pelo botão QR da barra inferior.

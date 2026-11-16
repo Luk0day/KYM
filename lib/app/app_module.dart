@@ -9,7 +9,7 @@ import '../modules/home/home_module.dart';
 import '../modules/home/home_routes.dart';
 import '../modules/orders/domain/repositories/order_repository.dart';
 import '../modules/orders/infra/repositories/order_repository_impl.dart';
-import '../modules/scanner/presenter/pages/scanner_page.dart';
+import '../modules/scanner/presenter/widgets/scanner_camera_builder.dart';
 import '../modules/scanner/scanner_module.dart';
 import '../modules/stores/domain/repositories/store_repository.dart';
 import '../modules/stores/infra/repositories/store_repository_impl.dart';

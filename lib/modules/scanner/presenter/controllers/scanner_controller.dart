@@ -24,6 +24,7 @@ class ScannerController extends ChangeNotifier {
   ScannerStatus _status = ScannerStatus.scanning;
   String? _lastCode;
   bool _failed = false;
+  bool _settingsFailed = false;
   bool _disposed = false;
 
   ScannerStatus get status => _status;
@@ -33,6 +34,9 @@ class ScannerController extends ChangeNotifier {
 
   /// True quando o último código não pôde ser tratado e a leitura voltou.
   bool get lastReadFailed => _failed;
+
+  /// True quando o sistema não abriu as configurações do aplicativo.
+  bool get settingsFailed => _settingsFailed;
 
   /// A câmera só deve rodar enquanto nenhum código está em tratamento.
   bool get isCameraActive => _status == ScannerStatus.scanning;
@@ -69,7 +73,16 @@ class ScannerController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> openSettings() => _openAppSettings();
+  /// Abre as configurações; se o sistema não abrir, [settingsFailed] avisa.
+  Future<bool> openSettings() async {
+    final opened = await _openAppSettings();
+    if (_disposed) return opened;
+    if (_settingsFailed == opened) {
+      _settingsFailed = !opened;
+      notifyListeners();
+    }
+    return opened;
+  }
 
   @override
   void dispose() {

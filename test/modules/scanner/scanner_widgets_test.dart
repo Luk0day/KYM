@@ -88,13 +88,15 @@ void main() {
 
   group('ScannerPage', () {
     late _MockHandler handler;
+    late _MockSettings settings;
     late ScannerController controller;
     late void Function(String) detect;
+    late VoidCallback openSettings;
 
     setUp(() {
       final feedback = _MockFeedback();
       handler = _MockHandler();
-      final settings = _MockSettings();
+      settings = _MockSettings();
       when(() => feedback.confirm()).thenAnswer((_) async {});
       when(() => handler.handle(any())).thenAnswer((_) async {});
       when(() => settings.open()).thenAnswer((_) async => true);
@@ -126,6 +128,7 @@ void main() {
                   required onOpenSettings,
                 }) {
                   detect = onDetect;
+                  openSettings = onOpenSettings;
                   return Center(
                     child: Text(
                       active ? 'camera ativa' : 'camera parada',
@@ -202,6 +205,17 @@ void main() {
 
       expect(find.textContaining('Não foi possível tratar'), findsOneWidget);
       expect(find.text('camera ativa'), findsOneWidget);
+    });
+
+    testWidgets('avisa quando as configurações não abrem', (tester) async {
+      when(() => settings.open()).thenAnswer((_) async => false);
+      await pumpPage(tester, showStoreLegend: true);
+      expect(find.textContaining('abrir as configurações'), findsNothing);
+
+      openSettings();
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('abrir as configurações'), findsOneWidget);
     });
 
     testWidgets('atende às guidelines de acessibilidade', (tester) async {

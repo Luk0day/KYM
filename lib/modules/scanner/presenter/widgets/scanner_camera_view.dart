@@ -5,6 +5,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../controllers/camera_lifecycle.dart';
 import 'scan_frame.dart';
 import 'scanner_permission_denied.dart';
 import 'scanner_unavailable.dart';
@@ -40,8 +41,7 @@ class _ScannerCameraViewState extends State<ScannerCameraView>
     detectionSpeed: DetectionSpeed.noDuplicates,
   );
 
-  bool _resumeOnForeground = false;
-  bool _awaitingSettings = false;
+  final CameraLifecycle _lifecycle = CameraLifecycle();
 
   @override
   void initState() {
@@ -60,17 +60,13 @@ class _ScannerCameraViewState extends State<ScannerCameraView>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        // Voltar das configurações tenta de novo; voltar do diálogo de
-        // permissão não, porque a câmera ainda nem tinha iniciado.
-        final shouldStart = _resumeOnForeground || _awaitingSettings;
-        _resumeOnForeground = false;
-        _awaitingSettings = false;
-        if (shouldStart && widget.active) unawaited(_start());
+        if (_lifecycle.onForeground(active: widget.active)) {
+          unawaited(_start());
+        }
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
-        if (_controller.value.isRunning) {
-          _resumeOnForeground = true;
+        if (_lifecycle.onBackground(isRunning: _controller.value.isRunning)) {
           unawaited(_stop());
         }
       case AppLifecycleState.detached:
@@ -93,7 +89,7 @@ class _ScannerCameraViewState extends State<ScannerCameraView>
   }
 
   void _openSettings() {
-    _awaitingSettings = true;
+    _lifecycle.markAwaitingSettings();
     widget.onOpenSettings();
   }
 

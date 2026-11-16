@@ -6,7 +6,6 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/presenter/widgets/kym_bottom_nav_bar.dart';
 import '../../../auth/domain/entities/user_role_permissions.dart';
 import '../../../auth/presenter/controllers/session_controller.dart';
-import '../../../scanner/scanner_routes.dart';
 import '../../home_routes.dart';
 import '../navigation/destination_nav_item.dart';
 
@@ -25,11 +24,12 @@ class _ShellPageState extends State<ShellPage> {
   final _outletKey = GlobalKey<RouterOutletState>();
 
   void _open(AppDestination destination) {
+    final route = HomeRoutes.of(destination);
     if (destination == AppDestination.qr) {
-      context.pushNamed(ScannerRoutes.root);
+      context.pushNamed(route);
       return;
     }
-    _outletKey.currentState?.navigate(HomeRoutes.of(destination));
+    _outletKey.currentState?.navigate(route);
   }
 
   @override

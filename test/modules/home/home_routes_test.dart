@@ -1,15 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kym/modules/auth/domain/entities/user_role_permissions.dart';
 import 'package:kym/modules/home/home_routes.dart';
+import 'package:kym/modules/scanner/scanner_routes.dart';
 
 void main() {
   test('cada destino tem uma rota própria dentro de /home', () {
     final routes = AppDestination.values.map(HomeRoutes.of).toList();
 
     expect(routes.toSet(), hasLength(AppDestination.values.length));
-    for (final route in routes) {
-      expect(route, startsWith('${HomeRoutes.root}/'));
+    for (final destination in AppDestination.values) {
+      if (destination == AppDestination.qr) continue;
+      expect(
+        HomeRoutes.of(destination),
+        startsWith('${HomeRoutes.root}/'),
+        reason: '$destination',
+      );
     }
+  });
+
+  test('o leitor abre em /scanner, fora do shell', () {
+    expect(HomeRoutes.of(AppDestination.qr), ScannerRoutes.root);
   });
 
   test('rota de QR Codes é /home/qr-codes', () {
@@ -38,7 +48,10 @@ void main() {
         HomeRoutes.destinationOf(HomeRoutes.qrCodes),
         AppDestination.qrCodes,
       );
-      expect(HomeRoutes.destinationOf(HomeRoutes.qr), AppDestination.qr);
+      expect(
+        HomeRoutes.destinationOf(ScannerRoutes.root),
+        AppDestination.qr,
+      );
     });
 
     test('devolve null fora das abas', () {
