@@ -8,8 +8,9 @@ import '../../../../shared/presenter/widgets/kym_text_field.dart';
 import '../../domain/entities/store_summary.dart';
 import '../controllers/stores_controller.dart';
 import '../utils/stores_messages.dart';
-import '../widgets/store_filter_sheet.dart';
+import '../widgets/store_filter_chips.dart';
 import '../widgets/store_tile.dart';
+import '../widgets/sync_status_pill.dart';
 
 class StoresPage extends StatefulWidget {
   const StoresPage({
@@ -47,24 +48,9 @@ class _StoresPageState extends State<StoresPage> {
     if (!ok && mounted) {
       final message = _controller.syncMessage;
       if (message != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
       }
-    }
-  }
-
-  Future<void> _openFilters() async {
-    final result = await showStoreFilterSheet(
-      context,
-      filter: _controller.filter,
-      cities: _controller.result.availableCities,
-    );
-    if (result != null) {
-      _controller.applyFilters(
-        city: result.city,
-        onlyWithPending: result.onlyWithPending,
-      );
     }
   }
 
@@ -76,14 +62,21 @@ class _StoresPageState extends State<StoresPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Lojas')),
       body: SafeArea(
-        top: false,
         child: ListenableBuilder(
           listenable: _controller,
           builder: (context, _) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSearchBar(),
+              _buildHeader(),
+              const SizedBox(height: 16),
+              _buildSearch(),
+              const SizedBox(height: 12),
+              StoreFilterChips(
+                selected: _controller.filter.kind,
+                onSelected: _controller.selectKind,
+              ),
+              const SizedBox(height: 4),
               Expanded(child: _buildContent()),
             ],
           ),
@@ -92,35 +85,53 @@ class _StoresPageState extends State<StoresPage> {
     );
   }
 
-  Widget _buildSearchBar() {
-    final hasFilters = _controller.filter.hasSheetFilters;
+  Widget _buildHeader() {
+    final ready = _controller.status == StoresStatus.ready;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 8, 14, 12),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: KymTextField(
-              label: 'Buscar loja',
-              hintText: 'Nome, código ou cidade',
-              controller: _searchController,
-              textInputAction: TextInputAction.search,
-              autocorrect: false,
-              onChanged: _controller.setQuery,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  header: true,
+                  child: const Text('Lojas', style: AppTextStyles.screenTitle),
+                ),
+                if (ready) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    storeCountLabel(_controller.result.items.length),
+                    style: AppTextStyles.metadata,
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(width: 4),
-          IconButton(
-            tooltip: hasFilters ? 'Filtros (ativos)' : 'Filtros',
-            onPressed: _openFilters,
-            icon: Badge(
-              isLabelVisible: hasFilters,
-              smallSize: 8,
-              child: const Icon(Icons.tune_rounded),
-            ),
-          ),
+          const SizedBox(width: 12),
+          Flexible(child: SyncStatusPill(indicator: _controller.syncIndicator)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearch() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: KymTextField(
+        label: 'Buscar loja',
+        hintText: 'Buscar loja',
+        hideLabel: true,
+        controller: _searchController,
+        textInputAction: TextInputAction.search,
+        autocorrect: false,
+        prefixIcon: const ExcludeSemantics(
+          child: Icon(Icons.search_rounded, color: AppColors.textSecondary),
+        ),
+        onChanged: _controller.setQuery,
       ),
     );
   }
@@ -140,7 +151,7 @@ class _StoresPageState extends State<StoresPage> {
 
   Widget _buildError() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -165,14 +176,14 @@ class _StoresPageState extends State<StoresPage> {
     } else if (result.items.isEmpty) {
       child = _EmptyState(
         title: 'Nenhuma loja encontrada',
-        message: 'Tente outro termo ou limpe os filtros.',
+        message: 'Tente outro termo ou escolha outro filtro.',
         actionLabel: 'Limpar busca e filtros',
         onAction: _clearAll,
       );
     } else {
       child = ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(22, 0, 22, 24),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         itemCount: result.items.length,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
@@ -206,7 +217,7 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(22, 48, 22, 24),
+      padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
       children: [
         const ExcludeSemantics(
           child: Icon(

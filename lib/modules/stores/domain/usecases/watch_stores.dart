@@ -10,32 +10,24 @@ class WatchStores {
   final StoreListRepository _repository;
 
   /// Lojas inativas só aparecem quando [includeInactive] é verdadeiro
-  /// (gestor). A busca ignora maiúsculas e acentos e olha nome, código e
-  /// cidade.
+  /// (gestor). A busca ignora maiúsculas e acentos e olha nome, código,
+  /// cidade e endereço.
   Stream<StoreListResult> call({
     StoreFilter filter = const StoreFilter(),
     bool includeInactive = false,
   }) {
     final query = TextNormalizer.normalize(filter.query);
-    final city = filter.city == null
-        ? null
-        : TextNormalizer.normalize(filter.city!);
 
     return _repository.watchStores().map((stores) {
-      final visible = stores
-          .where((store) => includeInactive || store.isActive)
-          .toList()
-        ..sort(_byName);
+      final visible =
+          stores.where((store) => includeInactive || store.isActive).toList()
+            ..sort(_byName);
 
       final items = visible
-          .where((store) => _matches(store, query, city, filter))
+          .where((store) => _matches(store, query, filter.kind))
           .toList();
 
-      return StoreListResult(
-        items: items,
-        availableCities: _cities(visible),
-        totalVisible: visible.length,
-      );
+      return StoreListResult(items: items, totalVisible: visible.length);
     });
   }
 
@@ -45,36 +37,22 @@ class WatchStores {
     return byName != 0 ? byName : a.id.compareTo(b.id);
   }
 
-  static bool _matches(
-    StoreSummary store,
-    String query,
-    String? city,
-    StoreFilter filter,
-  ) {
-    if (filter.onlyWithPending && store.openOrders <= 0) {
-      return false;
-    }
-    if (city != null && TextNormalizer.normalize(store.city ?? '') != city) {
+  static bool _matches(StoreSummary store, String query, StoreFilterKind kind) {
+    final matchesKind = switch (kind) {
+      StoreFilterKind.todas => true,
+      StoreFilterKind.comAtrasadas => store.overdueOrders > 0,
+      StoreFilterKind.preventivas => store.preventiveOrders > 0,
+      StoreFilterKind.corretivas => store.correctiveOrders > 0,
+    };
+    if (!matchesKind) {
       return false;
     }
     if (query.isEmpty) {
       return true;
     }
-    return [store.name, store.code, store.city].any(
+    return [store.name, store.code, store.city, store.address].any(
       (field) =>
           field != null && TextNormalizer.normalize(field).contains(query),
     );
-  }
-
-  static List<String> _cities(List<StoreSummary> stores) {
-    final byKey = <String, String>{};
-    for (final store in stores) {
-      final city = store.city?.trim();
-      if (city != null && city.isNotEmpty) {
-        byKey.putIfAbsent(TextNormalizer.normalize(city), () => city);
-      }
-    }
-    final keys = byKey.keys.toList()..sort();
-    return [for (final key in keys) byKey[key]!];
   }
 }

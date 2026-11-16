@@ -10,6 +10,8 @@ import 'package:kym/modules/stores/domain/usecases/watch_stores.dart';
 import 'package:kym/modules/stores/presenter/controllers/stores_controller.dart';
 import 'package:kym/modules/stores/presenter/pages/stores_page.dart';
 import 'package:kym/modules/stores/presenter/utils/stores_messages.dart';
+import 'package:kym/modules/stores/presenter/widgets/store_filter_chips.dart';
+import 'package:kym/modules/stores/presenter/widgets/store_tile.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../support/store_fakes.dart';
@@ -68,116 +70,228 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('mostra nome, código, cidade e o selo de pendências',
-      (tester) async {
-    await pumpPage(tester);
-
-    expect(find.text('Pão de Açúcar Boa Viagem'), findsOneWidget);
-    expect(find.text('L001 · Recife'), findsOneWidget);
-    expect(find.text('2 EM ABERTO'), findsOneWidget);
-    expect(find.text('EM DIA'), findsOneWidget);
-    expect(find.text('Atacadão Jaboatão'), findsNothing);
-  });
-
-  testWidgets('gestor vê a loja inativa com o selo', (tester) async {
-    await pumpPage(tester, role: UserRole.gestor);
-
-    expect(find.text('Atacadão Jaboatão'), findsOneWidget);
-    expect(find.text('INATIVA'), findsOneWidget);
-  });
-
-  testWidgets('a busca filtra sem diferenciar acento', (tester) async {
-    await pumpPage(tester);
-
-    await search(tester, 'pao de acucar');
-
-    expect(find.text('Pão de Açúcar Boa Viagem'), findsOneWidget);
-    expect(find.text('Carrefour Água Fria'), findsNothing);
-  });
-
-  testWidgets('sem resultado mostra o aviso e limpar volta a lista',
-      (tester) async {
-    await pumpPage(tester);
-
-    await search(tester, 'inexistente');
-
-    expect(find.text('Nenhuma loja encontrada'), findsOneWidget);
-
-    await tester.tap(find.text('Limpar busca e filtros'));
+  // No teste a fonte é larga (Ahem): os chips da direita ficam fora da tela,
+  // então rola até eles antes de tocar.
+  Future<void> tapChip(WidgetTester tester, String label) async {
+    await tester.scrollUntilVisible(
+      find.text(label),
+      100,
+      scrollable: find.descendant(
+        of: find.byType(StoreFilterChips),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.ensureVisible(find.text(label));
     await tester.pumpAndSettle();
+    await tester.tap(find.text(label));
+    await tester.pumpAndSettle();
+  }
 
-    expect(find.text('Carrefour Água Fria'), findsOneWidget);
-    expect(find.text('inexistente'), findsNothing);
+  group('cabeçalho', () {
+    testWidgets('mostra título, quantidade e selo de sincronização', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+
+      expect(find.text('Lojas'), findsOneWidget);
+      expect(find.text('2 lojas'), findsOneWidget);
+      expect(find.text('Sincronizado'), findsOneWidget);
+    });
+
+    testWidgets('a quantidade acompanha a busca', (tester) async {
+      await pumpPage(tester);
+
+      await search(tester, 'olinda');
+
+      expect(find.text('1 loja'), findsOneWidget);
+    });
   });
 
-  testWidgets('sem lojas mostra o estado vazio', (tester) async {
-    await pumpPage(tester, repo: FakeStoreListRepository());
+  group('lista', () {
+    testWidgets('mostra iniciais, nome, endereço, cidade e situação', (
+      tester,
+    ) async {
+      await pumpPage(tester);
 
-    expect(find.text('Nenhuma loja atribuída a você'), findsOneWidget);
+      expect(find.text('PA'), findsOneWidget);
+      expect(find.text('Pão de Açúcar Boa Viagem'), findsOneWidget);
+      expect(find.text('Av. Boa Viagem, 3500 · Recife'), findsOneWidget);
+      expect(find.text('2 EM ABERTO'), findsOneWidget);
+      expect(find.text('EM DIA'), findsOneWidget);
+      expect(find.text('Atacadão Jaboatão'), findsNothing);
+    });
+
+    testWidgets('loja com ordens vencidas mostra "atrasadas"', (tester) async {
+      repository.emit(const [
+        StoreSummary(
+          id: 'a',
+          name: 'Loja Centro',
+          address: 'Rua da Matriz',
+          openOrders: 2,
+          overdueOrders: 2,
+        ),
+        StoreSummary(
+          id: 'b',
+          name: 'Loja Sul',
+          openOrders: 1,
+          overdueOrders: 1,
+        ),
+      ]);
+      await pumpPage(tester);
+
+      expect(find.text('LC'), findsOneWidget);
+      expect(find.text('2 ATRASADAS'), findsOneWidget);
+      expect(find.text('1 ATRASADA'), findsOneWidget);
+    });
+
+    testWidgets('gestor vê a loja inativa com o selo', (tester) async {
+      await pumpPage(tester, role: UserRole.gestor);
+
+      expect(find.text('Atacadão Jaboatão'), findsOneWidget);
+      expect(find.text('INATIVA'), findsOneWidget);
+    });
+
+    testWidgets('tocar numa loja avisa a rota', (tester) async {
+      await pumpPage(tester);
+
+      await tester.tap(find.text('Carrefour Água Fria'));
+
+      expect(selected?.id, 's2');
+    });
+
+    test('iniciais do nome', () {
+      expect(StoreTile.initialsOf('Loja Centro'), 'LC');
+      expect(StoreTile.initialsOf('  loja   norte  sul '), 'LN');
+      expect(StoreTile.initialsOf('Shopping'), 'SH');
+      expect(StoreTile.initialsOf('X'), 'X');
+      expect(StoreTile.initialsOf('   '), '?');
+    });
   });
 
-  testWidgets('filtro de pendências no BottomSheet', (tester) async {
-    await pumpPage(tester);
+  group('busca e filtros', () {
+    testWidgets('a busca filtra sem diferenciar acento', (tester) async {
+      await pumpPage(tester);
 
-    await tester.tap(find.byTooltip('Filtros'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Só com pendências'));
-    await tester.tap(find.text('Aplicar'));
-    await tester.pumpAndSettle();
+      await search(tester, 'pao de acucar');
 
-    expect(find.text('Pão de Açúcar Boa Viagem'), findsOneWidget);
-    expect(find.text('Carrefour Água Fria'), findsNothing);
-    expect(find.byTooltip('Filtros (ativos)'), findsOneWidget);
+      expect(find.text('Pão de Açúcar Boa Viagem'), findsOneWidget);
+      expect(find.text('Carrefour Água Fria'), findsNothing);
+    });
+
+    testWidgets('o campo de busca é anunciado pelo leitor de tela', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpPage(tester);
+
+      expect(find.bySemanticsLabel('Buscar loja'), findsWidgets);
+      handle.dispose();
+    });
+
+    testWidgets('os chips de filtro aparecem e Todas começa marcado', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+
+      for (final label in ['Todas', 'Com atrasadas', 'Preventivas']) {
+        expect(find.text(label), findsOneWidget);
+      }
+    });
+
+    testWidgets('chip Preventivas filtra as lojas', (tester) async {
+      await pumpPage(tester);
+
+      await tapChip(tester, 'Preventivas');
+
+      expect(find.text('Pão de Açúcar Boa Viagem'), findsOneWidget);
+      expect(find.text('Carrefour Água Fria'), findsNothing);
+    });
+
+    testWidgets('chip Corretivas filtra as lojas', (tester) async {
+      await pumpPage(tester);
+
+      await tapChip(tester, 'Corretivas');
+
+      expect(find.text('Pão de Açúcar Boa Viagem'), findsOneWidget);
+      expect(find.text('Carrefour Água Fria'), findsNothing);
+    });
+
+    testWidgets('sem resultado mostra o aviso e limpar volta a lista', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+
+      await tapChip(tester, 'Com atrasadas');
+      expect(find.text('Nenhuma loja encontrada'), findsOneWidget);
+
+      await tester.tap(find.text('Limpar busca e filtros'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Carrefour Água Fria'), findsOneWidget);
+      expect(find.text('Nenhuma loja encontrada'), findsNothing);
+    });
+
+    testWidgets('sem lojas mostra o estado vazio', (tester) async {
+      await pumpPage(tester, repo: FakeStoreListRepository());
+
+      expect(find.text('Nenhuma loja atribuída a você'), findsOneWidget);
+    });
   });
 
-  testWidgets('filtro de cidade no BottomSheet', (tester) async {
-    await pumpPage(tester);
+  group('sincronização', () {
+    testWidgets('puxar para baixo sincroniza', (tester) async {
+      await pumpPage(tester);
 
-    await tester.tap(find.byTooltip('Filtros'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(DropdownButtonFormField<String?>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Olinda').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Aplicar'));
-    await tester.pumpAndSettle();
+      await tester.fling(
+        find.byType(ListView).last,
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Carrefour Água Fria'), findsOneWidget);
-    expect(find.text('Pão de Açúcar Boa Viagem'), findsNothing);
+      verify(syncService.sync).called(1);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(find.text('Sincronizado'), findsOneWidget);
+    });
+
+    testWidgets('falha offline avisa, mantém a lista e troca o selo', (
+      tester,
+    ) async {
+      when(syncService.sync)
+          .thenThrow(const SyncFailure(SyncFailureType.offline));
+      await pumpPage(tester);
+
+      await tester.fling(
+        find.byType(ListView).last,
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(SyncFailureType.offline.userMessage), findsOneWidget);
+      expect(find.text('Offline'), findsOneWidget);
+      expect(find.text('Carrefour Água Fria'), findsOneWidget);
+    });
+
+    testWidgets('falha do servidor troca o selo para falha', (tester) async {
+      when(syncService.sync)
+          .thenThrow(const SyncFailure(SyncFailureType.server));
+      await pumpPage(tester);
+
+      await tester.fling(
+        find.byType(ListView).last,
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Falha ao sincronizar'), findsOneWidget);
+    });
   });
 
-  testWidgets('tocar numa loja avisa a rota', (tester) async {
-    await pumpPage(tester);
-
-    await tester.tap(find.text('Carrefour Água Fria'));
-
-    expect(selected?.id, 's2');
-  });
-
-  testWidgets('puxar para baixo sincroniza', (tester) async {
-    await pumpPage(tester);
-
-    await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
-    await tester.pumpAndSettle();
-
-    verify(syncService.sync).called(1);
-    expect(find.byType(SnackBar), findsNothing);
-  });
-
-  testWidgets('falha na sincronização avisa e mantém a lista', (tester) async {
-    when(syncService.sync)
-        .thenThrow(const SyncFailure(SyncFailureType.offline));
-    await pumpPage(tester);
-
-    await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
-    await tester.pumpAndSettle();
-
-    expect(find.text(SyncFailureType.offline.userMessage), findsOneWidget);
-    expect(find.text('Carrefour Água Fria'), findsOneWidget);
-  });
-
-  testWidgets('erro de leitura mostra aviso e tentar de novo recupera',
-      (tester) async {
+  testWidgets('erro de leitura mostra aviso e tentar de novo recupera', (
+    tester,
+  ) async {
     final mock = MockStoreListRepository();
     when(mock.watchStores).thenAnswer(
       (_) => Stream<List<StoreSummary>>.error(StateError('banco fechado')),
@@ -194,8 +308,9 @@ void main() {
   });
 
   group('acessibilidade e layout', () {
-    testWidgets('atende às guidelines de toque, rótulo e contraste',
-        (tester) async {
+    testWidgets('atende às guidelines de toque, rótulo e contraste', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       await pumpPage(tester, role: UserRole.gestor);
 
@@ -206,15 +321,14 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('fonte do sistema em 200% não quebra o layout',
-        (tester) async {
+    testWidgets('fonte do sistema em 200% não quebra o layout', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 2.0;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
       await pumpPage(tester, role: UserRole.gestor, size: const Size(360, 640));
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Carrefour Água Fria'), findsOneWidget);
+      expect(find.text('Atacadão Jaboatão'), findsOneWidget);
     });
 
     testWidgets('tela pequena não estoura', (tester) async {

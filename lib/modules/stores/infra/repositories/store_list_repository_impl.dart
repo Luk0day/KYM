@@ -12,11 +12,11 @@ class StoreListRepositoryImpl implements StoreListRepository {
   @override
   Stream<List<StoreSummary>> watchStores() {
     return _dataSource.watchStores().map(
-          (models) => [
-            for (final model in models)
-              if (_isValid(model)) _toEntity(model),
-          ],
-        );
+      (models) => [
+        for (final model in models)
+          if (_isValid(model)) _toEntity(model),
+      ],
+    );
   }
 
   bool _isValid(StoreModel model) =>
@@ -27,11 +27,17 @@ class StoreListRepositoryImpl implements StoreListRepository {
       id: model.id.trim(),
       name: model.name.trim(),
       code: _blankToNull(model.code),
+      address: _blankToNull(model.address),
       city: _blankToNull(model.city),
       isActive: model.active,
-      openOrders: model.openOrders < 0 ? 0 : model.openOrders,
+      openOrders: _count(model.openOrders),
+      overdueOrders: _count(model.overdueOrders),
+      preventiveOrders: _count(model.preventiveOrders),
+      correctiveOrders: _count(model.correctiveOrders),
     );
   }
+
+  int _count(int value) => value < 0 ? 0 : value;
 
   String? _blankToNull(String? value) {
     final trimmed = value?.trim();

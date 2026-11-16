@@ -47,10 +47,9 @@ void main() {
       expect(await idsFor(includeInactive: true), ['s3', 's2', 's1']);
     });
 
-    test('totalVisible ignora a busca e os filtros', () async {
-      final result = await watchStores(
-        filter: const StoreFilter(query: 'zzz'),
-      ).first;
+    test('totalVisible ignora a busca e o filtro', () async {
+      final result = await watchStores(filter: const StoreFilter(query: 'zzz'))
+          .first;
 
       expect(result.items, isEmpty);
       expect(result.totalVisible, 2);
@@ -61,7 +60,6 @@ void main() {
 
       expect(result.items, isEmpty);
       expect(result.totalVisible, 0);
-      expect(result.availableCities, isEmpty);
     });
   });
 
@@ -81,8 +79,9 @@ void main() {
 
   group('busca', () {
     test('por nome, sem acento e sem diferenciar maiúsculas', () async {
-      expect(await idsFor(filter: const StoreFilter(query: 'PAO de acucar')),
-          ['s1']);
+      expect(await idsFor(filter: const StoreFilter(query: 'PAO de acucar')), [
+        's1',
+      ]);
     });
 
     test('acento digitado casa com texto sem acento', () async {
@@ -97,67 +96,77 @@ void main() {
       expect(await idsFor(filter: const StoreFilter(query: 'olinda')), ['s2']);
     });
 
-    test('por parte do nome', () async {
-      expect(await idsFor(filter: const StoreFilter(query: 'fria')), ['s2']);
+    test('por endereço', () async {
+      expect(await idsFor(filter: const StoreFilter(query: 'matriz')), ['s2']);
     });
 
     test('termo só com espaços não filtra', () async {
-      expect(await idsFor(filter: const StoreFilter(query: '   ')),
-          ['s2', 's1']);
+      expect(await idsFor(filter: const StoreFilter(query: '   ')), [
+        's2',
+        's1',
+      ]);
     });
   });
 
-  group('filtros', () {
-    test('por cidade', () async {
-      expect(await idsFor(filter: const StoreFilter(city: 'Recife')), ['s1']);
+  group('abas de filtro', () {
+    const withOverdue = [
+      StoreSummary(
+        id: 'a',
+        name: 'A',
+        openOrders: 3,
+        overdueOrders: 2,
+        preventiveOrders: 2,
+        correctiveOrders: 1,
+      ),
+      StoreSummary(id: 'b', name: 'B', openOrders: 1, correctiveOrders: 1),
+      StoreSummary(id: 'c', name: 'C', openOrders: 1, preventiveOrders: 1),
+      StoreSummary(id: 'd', name: 'D'),
+    ];
+
+    Future<List<String>> idsOf(StoreFilterKind kind) async {
+      repository.emit(withOverdue);
+      final result = await watchStores(filter: StoreFilter(kind: kind)).first;
+      return result.items.map((s) => s.id).toList();
+    }
+
+    test('todas', () async {
+      expect(await idsOf(StoreFilterKind.todas), ['a', 'b', 'c', 'd']);
     });
 
-    test('cidade ignora acento e caixa', () async {
-      expect(await idsFor(filter: const StoreFilter(city: 'RECIFE')), ['s1']);
+    test('com atrasadas', () async {
+      expect(await idsOf(StoreFilterKind.comAtrasadas), ['a']);
     });
 
-    test('só com pendências', () async {
-      expect(
-        await idsFor(filter: const StoreFilter(onlyWithPending: true)),
-        ['s1'],
-      );
+    test('preventivas', () async {
+      expect(await idsOf(StoreFilterKind.preventivas), ['a', 'c']);
     });
 
-    test('combina busca, cidade e pendências', () async {
-      final filter = const StoreFilter(
-        query: 'atacadao',
-        city: 'Recife',
-        onlyWithPending: true,
-      );
-
-      expect(await idsFor(filter: filter), isEmpty);
-      expect(await idsFor(filter: filter, includeInactive: true), ['s3']);
+    test('corretivas', () async {
+      expect(await idsOf(StoreFilterKind.corretivas), ['a', 'b']);
     });
 
-    test('cidades disponíveis são únicas, ordenadas e só das visíveis',
-        () async {
-      repository.emit(const [
-        StoreSummary(id: 'a', name: 'A', city: 'Recife'),
-        StoreSummary(id: 'b', name: 'B', city: 'recife'),
-        StoreSummary(id: 'c', name: 'C', city: 'Olinda'),
-        StoreSummary(id: 'd', name: 'D', city: ' '),
-        StoreSummary(id: 'e', name: 'E', city: 'Paulista', isActive: false),
-      ]);
+    test('combina aba e busca', () async {
+      repository.emit(withOverdue);
 
-      final result = await watchStores().first;
+      final result = await watchStores(
+        filter: const StoreFilter(
+          query: 'c',
+          kind: StoreFilterKind.preventivas,
+        ),
+      ).first;
 
-      expect(result.availableCities, ['Olinda', 'Recife']);
+      expect(result.items.map((s) => s.id), ['c']);
     });
   });
 
   group('StoreFilter', () {
-    test('copyWith limpa a cidade só quando pedido', () {
-      const filter = StoreFilter(city: 'Recife', onlyWithPending: true);
+    test('copyWith troca só o que foi pedido', () {
+      const filter = StoreFilter(query: 'a', kind: StoreFilterKind.corretivas);
 
-      expect(filter.copyWith(query: 'a').city, 'Recife');
-      expect(filter.copyWith(clearCity: true).city, isNull);
-      expect(filter.hasSheetFilters, isTrue);
+      expect(filter.copyWith(query: 'b').kind, StoreFilterKind.corretivas);
+      expect(filter.copyWith(kind: StoreFilterKind.todas).query, 'a');
       expect(const StoreFilter(query: ' ').isEmpty, isTrue);
+      expect(filter.isEmpty, isFalse);
     });
   });
 

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kym/modules/auth/domain/entities/user_role.dart';
+import 'package:kym/modules/stores/domain/entities/store_filter.dart';
 import 'package:kym/modules/stores/domain/entities/store_summary.dart';
 import 'package:kym/modules/stores/domain/repositories/store_list_repository.dart';
 import 'package:kym/modules/stores/domain/services/sync_service.dart';
@@ -110,19 +111,19 @@ void main() {
       expect(controller.filter.query, 'olinda');
     });
 
-    test('filtra por cidade e só pendências, e limpa tudo', () async {
+    test('troca a aba de filtro e limpa tudo', () async {
       final controller = build()..load();
       addTearDown(controller.dispose);
       await pumpEventQueue();
 
-      controller.applyFilters(city: 'Recife', onlyWithPending: true);
+      controller.selectKind(StoreFilterKind.preventivas);
       await pumpEventQueue();
+      expect(controller.filter.kind, StoreFilterKind.preventivas);
       expect(ids(controller), ['s1']);
 
-      controller.applyFilters(onlyWithPending: false);
+      controller.selectKind(StoreFilterKind.comAtrasadas);
       await pumpEventQueue();
-      expect(controller.filter.city, isNull);
-      expect(ids(controller), ['s2', 's1']);
+      expect(ids(controller), isEmpty);
 
       controller
         ..setQuery('xyz')
@@ -132,6 +133,18 @@ void main() {
       expect(ids(controller), ['s2', 's1']);
     });
 
+    test('escolher a aba já ativa não reassina', () async {
+      final controller = build()..load();
+      addTearDown(controller.dispose);
+      await pumpEventQueue();
+      var notifications = 0;
+      controller.addListener(() => notifications++);
+
+      controller.selectKind(StoreFilterKind.todas);
+      await pumpEventQueue();
+
+      expect(notifications, 0);
+    });
     test('novos dados do banco chegam sem recarregar', () async {
       final controller = build()..load();
       addTearDown(controller.dispose);
@@ -160,9 +173,7 @@ void main() {
       await pumpEventQueue();
       expect(controller.status, StoresStatus.error);
 
-      when(mock.watchStores).thenAnswer(
-        (_) => Stream.value(sampleStores),
-      );
+      when(mock.watchStores).thenAnswer((_) => Stream.value(sampleStores));
       controller.retry();
       expect(controller.status, StoresStatus.loading);
       await pumpEventQueue();
@@ -178,6 +189,7 @@ void main() {
 
       expect(await controller.refresh(), isTrue);
       expect(controller.syncMessage, isNull);
+      expect(controller.syncIndicator, SyncIndicator.synced);
       verify(syncService.sync).called(1);
     });
 
@@ -193,6 +205,12 @@ void main() {
 
         expect(await controller.refresh(), isFalse);
         expect(controller.syncMessage, entry.value);
+        expect(
+          controller.syncIndicator,
+          entry.key == SyncFailureType.offline
+              ? SyncIndicator.offline
+              : SyncIndicator.failed,
+        );
       });
     }
 
@@ -202,22 +220,22 @@ void main() {
       addTearDown(controller.dispose);
 
       expect(await controller.refresh(), isFalse);
-      expect(
-        controller.syncMessage,
-        SyncFailureType.unexpected.userMessage,
-      );
+      expect(controller.syncMessage, SyncFailureType.unexpected.userMessage);
     });
 
     test('a mensagem some na próxima tentativa bem-sucedida', () async {
-      when(syncService.sync).thenThrow(const SyncFailure(SyncFailureType.offline));
+      when(syncService.sync)
+          .thenThrow(const SyncFailure(SyncFailureType.offline));
       final controller = build();
       addTearDown(controller.dispose);
       await controller.refresh();
+      expect(controller.syncIndicator, SyncIndicator.offline);
 
       when(syncService.sync).thenAnswer((_) async {});
       await controller.refresh();
 
       expect(controller.syncMessage, isNull);
+      expect(controller.syncIndicator, SyncIndicator.synced);
     });
 
     test('a mensagem de erro de leitura é clara', () {

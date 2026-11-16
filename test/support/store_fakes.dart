@@ -14,7 +14,7 @@ import 'package:kym/modules/stores/domain/repositories/store_list_repository.dar
 /// [emit], como o banco local faria.
 class FakeStoreListRepository implements StoreListRepository {
   FakeStoreListRepository([List<StoreSummary> stores = const []])
-      : _stores = stores;
+    : _stores = stores;
 
   List<StoreSummary> _stores;
   final _changes = StreamController<List<StoreSummary>>.broadcast();
@@ -37,10 +37,10 @@ SessionController sessionFor(UserRole role) {
   final repository = AuthRepositoryImpl(
     FakeAuthDataSource(latency: Duration.zero),
   );
-  return SessionController(GetCurrentUser(repository), SignOut(repository))
-    ..start(
-      AuthenticatedUser(id: 'user-1', email: 'user@kym.test', role: role),
-    );
+  return SessionController(
+    GetCurrentUser(repository),
+    SignOut(repository),
+  )..start(AuthenticatedUser(id: 'user-1', email: 'user@kym.test', role: role));
 }
 
 /// Três lojas, uma delas inativa.
@@ -49,13 +49,17 @@ const sampleStores = [
     id: 's1',
     name: 'Pão de Açúcar Boa Viagem',
     code: 'L001',
+    address: 'Av. Boa Viagem, 3500',
     city: 'Recife',
     openOrders: 2,
+    preventiveOrders: 1,
+    correctiveOrders: 1,
   ),
   StoreSummary(
     id: 's2',
     name: 'Carrefour Água Fria',
     code: 'L002',
+    address: 'Rua da Matriz, 10',
     city: 'Olinda',
   ),
   StoreSummary(
@@ -65,5 +69,7 @@ const sampleStores = [
     city: 'Recife',
     isActive: false,
     openOrders: 1,
+    overdueOrders: 1,
+    preventiveOrders: 1,
   ),
 ];

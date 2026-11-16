@@ -1,29 +1,15 @@
+/// Abas de filtro da tela (chips do Figma).
+enum StoreFilterKind { todas, comAtrasadas, preventivas, corretivas }
+
 class StoreFilter {
-  const StoreFilter({
-    this.query = '',
-    this.city,
-    this.onlyWithPending = false,
-  });
+  const StoreFilter({this.query = '', this.kind = StoreFilterKind.todas});
 
   final String query;
-  final String? city;
-  final bool onlyWithPending;
+  final StoreFilterKind kind;
 
-  /// Filtros do BottomSheet (cidade e pendências), sem contar a busca.
-  bool get hasSheetFilters => city != null || onlyWithPending;
+  bool get isEmpty => query.trim().isEmpty && kind == StoreFilterKind.todas;
 
-  bool get isEmpty => query.trim().isEmpty && !hasSheetFilters;
-
-  StoreFilter copyWith({
-    String? query,
-    String? city,
-    bool clearCity = false,
-    bool? onlyWithPending,
-  }) {
-    return StoreFilter(
-      query: query ?? this.query,
-      city: clearCity ? null : (city ?? this.city),
-      onlyWithPending: onlyWithPending ?? this.onlyWithPending,
-    );
+  StoreFilter copyWith({String? query, StoreFilterKind? kind}) {
+    return StoreFilter(query: query ?? this.query, kind: kind ?? this.kind);
   }
 }

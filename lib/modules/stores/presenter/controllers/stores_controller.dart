@@ -13,6 +13,9 @@ import '../utils/stores_messages.dart';
 
 enum StoresStatus { loading, ready, error }
 
+/// Estado da sincronização mostrado no selo do topo da tela.
+enum SyncIndicator { synced, offline, failed }
+
 class StoresController extends ChangeNotifier {
   StoresController(this._watchStores, this._refreshStores, this._session);
 
@@ -25,6 +28,7 @@ class StoresController extends ChangeNotifier {
   StoresStatus _status = StoresStatus.loading;
   StoreListResult _result = StoreListResult.empty;
   StoreFilter _filter = const StoreFilter();
+  SyncIndicator _syncIndicator = SyncIndicator.synced;
   String? _syncMessage;
   bool _isRefreshing = false;
   bool _disposed = false;
@@ -34,6 +38,7 @@ class StoresController extends ChangeNotifier {
   StoresStatus get status => _status;
   StoreListResult get result => _result;
   StoreFilter get filter => _filter;
+  SyncIndicator get syncIndicator => _syncIndicator;
   String? get syncMessage => _syncMessage;
 
   /// Só o gestor enxerga lojas inativas.
@@ -62,12 +67,11 @@ class StoresController extends ChangeNotifier {
     });
   }
 
-  void applyFilters({String? city, required bool onlyWithPending}) {
-    _filter = _filter.copyWith(
-      city: city,
-      clearCity: city == null,
-      onlyWithPending: onlyWithPending,
-    );
+  void selectKind(StoreFilterKind kind) {
+    if (kind == _filter.kind) {
+      return;
+    }
+    _filter = _filter.copyWith(kind: kind);
     _subscribe();
   }
 
@@ -87,11 +91,17 @@ class StoresController extends ChangeNotifier {
 
     try {
       await _refreshStores();
+      _syncIndicator = SyncIndicator.synced;
+      notifyListeners();
       return true;
     } on SyncFailure catch (failure) {
       _syncMessage = failure.type.userMessage;
+      _syncIndicator = failure.type == SyncFailureType.offline
+          ? SyncIndicator.offline
+          : SyncIndicator.failed;
     } catch (_) {
       _syncMessage = SyncFailureType.unexpected.userMessage;
+      _syncIndicator = SyncIndicator.failed;
     } finally {
       _isRefreshing = false;
     }
@@ -102,20 +112,18 @@ class StoresController extends ChangeNotifier {
 
   void _subscribe() {
     _subscription?.cancel();
-    _subscription = _watchStores(
-      filter: _filter,
-      includeInactive: includeInactive,
-    ).listen(
-      (result) {
-        _result = result;
-        _status = StoresStatus.ready;
-        notifyListeners();
-      },
-      onError: (Object _) {
-        _status = StoresStatus.error;
-        notifyListeners();
-      },
-    );
+    _subscription =
+        _watchStores(filter: _filter, includeInactive: includeInactive).listen(
+          (result) {
+            _result = result;
+            _status = StoresStatus.ready;
+            notifyListeners();
+          },
+          onError: (Object _) {
+            _status = StoresStatus.error;
+            notifyListeners();
+          },
+        );
   }
 
   @override
