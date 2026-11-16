@@ -97,6 +97,7 @@ class _Rail extends StatelessWidget {
       child: NavigationRail(
         backgroundColor: AppColors.surface,
         useIndicator: false,
+        groupAlignment: 0,
         labelType: NavigationRailLabelType.all,
         selectedIndex: selectedIndex,
         onDestinationSelected: onSelected,
