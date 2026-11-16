@@ -88,7 +88,7 @@ void main() {
     await tester.tap(find.text('Continuar com Google'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Olá, Técnico Teste'), findsOneWidget);
+    expect(find.text('Olá, Técnico'), findsOneWidget);
     expect(find.byType(TextFormField), findsNothing);
   });
 
@@ -101,7 +101,7 @@ void main() {
       password: 'kym12345',
     );
 
-    expect(find.textContaining('Olá, Técnico Teste'), findsOneWidget);
+    expect(find.text('Olá, Técnico'), findsOneWidget);
     expect(find.byType(TextFormField), findsNothing);
   });
 
@@ -130,7 +130,9 @@ void main() {
       password: 'kym12345',
     );
 
-    await tester.tap(find.byIcon(Icons.logout));
+    await tester.tap(find.text('Perfil'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sair da conta'));
     await tester.pumpAndSettle();
 
     expect(find.byType(TextFormField), findsNWidgets(2));

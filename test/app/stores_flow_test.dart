@@ -8,8 +8,13 @@ import 'package:kym/app/database/app_database.dart';
 import 'package:kym/app/database/seed/fake_data_seeder.dart';
 import 'package:kym/modules/auth/infra/datasources/fake_auth_datasource.dart';
 
-/// Fluxo real: login -> Home -> Lojas, com o banco do seed em memória.
-Future<void> _openStores(WidgetTester tester, String email) async {
+/// Fluxo real: login -> casca de navegação -> aba Lojas, com o banco do seed
+/// em memória. O lojista já começa na aba Lojas; os demais tocam nela.
+Future<void> _openStores(
+  WidgetTester tester,
+  String email, {
+  bool tapTab = true,
+}) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -34,8 +39,10 @@ Future<void> _openStores(WidgetTester tester, String email) async {
   await tester.tap(find.byType(FilledButton));
   await tester.pumpAndSettle();
 
-  await tester.tap(find.text('Ver lojas'));
-  await tester.pumpAndSettle();
+  if (tapTab) {
+    await tester.tap(find.text('Lojas'));
+    await tester.pumpAndSettle();
+  }
 }
 
 /// Desmonta o app antes do fim do teste: o Drift agenda um timer ao cancelar
@@ -46,10 +53,10 @@ Future<void> _closeApp(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('técnico abre a tela Lojas com as lojas do seed', (tester) async {
+  testWidgets('técnico abre a aba Lojas com as lojas do seed', (tester) async {
     await _openStores(tester, 'tecnico@kym.test');
 
-    expect(find.text('Lojas'), findsOneWidget);
+    expect(find.text('Buscar loja'), findsOneWidget);
     expect(find.text('Loja Centro'), findsOneWidget);
     expect(find.text('Loja Boa Viagem'), findsOneWidget);
     expect(find.text('Nenhuma loja atribuída a você'), findsNothing);
@@ -65,6 +72,14 @@ void main() {
 
     expect(find.text('Loja Boa Viagem'), findsOneWidget);
     expect(find.text('Loja Centro'), findsNothing);
+    await _closeApp(tester);
+  });
+
+  testWidgets('lojista já começa na aba Lojas', (tester) async {
+    await _openStores(tester, 'lojista@kym.test', tapTab: false);
+
+    expect(find.text('Buscar loja'), findsOneWidget);
+    expect(find.text('Loja Centro'), findsOneWidget);
     await _closeApp(tester);
   });
 }
