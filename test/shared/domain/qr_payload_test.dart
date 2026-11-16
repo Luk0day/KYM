@@ -85,25 +85,35 @@ void main() {
       final result = QrPayload.parse('kym:2:S:$_token');
 
       expect(result, isA<QrUnsupportedVersion>());
-      expect((result as QrUnsupportedVersion).version, 2);
+      expect((result as QrUnsupportedVersion).version, '2');
     });
 
     test('versão 0', () {
-      expect(QrPayload.parse('kym:0:S:$_token'), const QrUnsupportedVersion(0));
+      expect(
+        QrPayload.parse('kym:0:S:$_token'),
+        const QrUnsupportedVersion('0'),
+      );
     });
 
     test('versão futura com outra forma de texto não vira malformado', () {
-      expect(QrPayload.parse('kym:3:X'), const QrUnsupportedVersion(3));
+      expect(QrPayload.parse('kym:3:X'), const QrUnsupportedVersion('3'));
       expect(
         QrPayload.parse('kym:2:S:$_token:extra'),
-        const QrUnsupportedVersion(2),
+        const QrUnsupportedVersion('2'),
+      );
+    });
+
+    test('versão numérica enorme não estoura: continua não suportada', () {
+      expect(
+        QrPayload.parse('kym:99999999999999999999999:S:$_token'),
+        const QrUnsupportedVersion('99999999999999999999999'),
       );
     });
 
     test('maiúsculas e espaços não atrapalham', () {
       expect(
         QrPayload.parse(' KYM:2:s:$_tokenUpper '),
-        const QrUnsupportedVersion(2),
+        const QrUnsupportedVersion('2'),
       );
     });
   });
@@ -127,6 +137,10 @@ void main() {
       'versão não numérica': 'kym:a:S:$_token',
       'versão vazia': 'kym::S:$_token',
       'versão negativa': 'kym:-1:S:$_token',
+      'versão com zero à esquerda': 'kym:01:S:$_token',
+      'versão com vários zeros': 'kym:001:S:$_token',
+      'versão com sinal': 'kym:+1:S:$_token',
+      'versão decimal': 'kym:1.0:S:$_token',
       'parte sobrando na versão 1': 'kym:1:S:$_token:extra',
     };
 
@@ -212,12 +226,12 @@ void main() {
       expect(QrValid(payload), QrValid(payload));
       expect(QrValid(payload).hashCode, QrValid(payload).hashCode);
       expect(
-        const QrUnsupportedVersion(2).hashCode,
-        const QrUnsupportedVersion(2).hashCode,
+        const QrUnsupportedVersion('2').hashCode,
+        const QrUnsupportedVersion('2').hashCode,
       );
       expect(
-        const QrUnsupportedVersion(2),
-        isNot(const QrUnsupportedVersion(3)),
+        const QrUnsupportedVersion('2'),
+        isNot(const QrUnsupportedVersion('3')),
       );
     });
 

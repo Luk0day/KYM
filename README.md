@@ -184,16 +184,16 @@ Usar o `qr_token` permite invalidar um QR impresso gerando um token novo, sem mu
 |---|---|---|
 | `QrValid` | QR do KYM, de loja ou de equipamento | seguir o fluxo do tipo |
 | `QrForeign` | Qualquer outro texto (URL, texto livre, outro sistema) | recusar |
-| `QrUnsupportedVersion` | Começa com `kym`, mas a versão não é a 1 | pedir para atualizar o app |
-| `QrMalformed` | Começa com `kym` e a versão é 1, mas o tipo ou o uuid são inválidos ou há partes faltando ou sobrando | recusar como QR inválido |
+| `QrUnsupportedVersion` | Começa com `kym` e a versão é um número válido diferente de 1 (o resto do texto não é lido) | pedir para atualizar o app |
+| `QrMalformed` | Começa com `kym`, mas não dá para interpretar: só `kym` ou `kym:`, versão que não é um número canônico (`kym:a:...`, `kym:01:...`) ou, na versão 1, tipo ou uuid inválidos, ou partes faltando ou sobrando | recusar como QR inválido |
 
-O texto lido é tolerante: espaços (inclusive quebra de linha) e maiúsculas são aceitos, e o token é normalizado para minúsculas.
+O texto lido é tolerante: espaços (inclusive quebra de linha) e maiúsculas são aceitos, e o token é normalizado para minúsculas. A versão, ao contrário, precisa estar escrita exatamente como no formato (`1`, não `01`).
 
 ```dart
 switch (QrPayload.parse(textoLido)) {
   case QrValid(:final payload): // payload.type e payload.token
   case QrForeign(): // não é do KYM
-  case QrUnsupportedVersion(:final version): // atualize o app
+  case QrUnsupportedVersion(:final version): // atualize o app (version é texto)
   case QrMalformed(): // QR do KYM inválido
 }
 ```

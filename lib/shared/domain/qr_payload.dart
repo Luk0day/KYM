@@ -40,6 +40,10 @@ class QrPayload {
 
   static const String _separator = ':';
 
+  /// Número natural sem zeros à esquerda ("1", não "01"). A versão fica como
+  /// texto para não estourar com números enormes.
+  static final RegExp _canonicalVersion = RegExp(r'^(0|[1-9]\d*)$');
+
   static final RegExp _uuid = RegExp(
     r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
   );
@@ -75,11 +79,11 @@ class QrPayload {
     // É do KYM, mas sem versão não há o que interpretar.
     if (parts.length < 2) return const QrMalformed();
 
-    final version = _parseVersion(parts[1]);
-    if (version == null) return const QrMalformed();
+    final version = parts[1];
+    if (!_canonicalVersion.hasMatch(version)) return const QrMalformed();
 
     // Versões futuras podem mudar a forma do texto: não olha o resto.
-    if (version != currentVersion) return QrUnsupportedVersion(version);
+    if (version != '$currentVersion') return QrUnsupportedVersion(version);
 
     if (parts.length != 4) return const QrMalformed();
 
@@ -89,9 +93,6 @@ class QrPayload {
 
     return QrValid(QrPayload(type: type, token: token));
   }
-
-  static int? _parseVersion(String text) =>
-      RegExp(r'^\d+$').hasMatch(text) ? int.tryParse(text) : null;
 
   /// uuid em minúsculas, ou `null` se [text] não for um uuid.
   static String? _normalizeToken(String text) {
@@ -138,7 +139,8 @@ final class QrForeign extends QrParseResult {
 final class QrUnsupportedVersion extends QrParseResult {
   const QrUnsupportedVersion(this.version);
 
-  final int version;
+  /// Versão lida, como texto (só dígitos, sem zeros à esquerda).
+  final String version;
 
   @override
   bool operator ==(Object other) =>
