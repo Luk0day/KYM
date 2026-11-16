@@ -19,4 +19,26 @@ abstract final class LoginValidators {
     }
     return null;
   }
+
+  static const int minNewPasswordLength = 6;
+
+  static String? newPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Informe a nova senha.';
+    }
+    if (value.length < minNewPasswordLength) {
+      return 'Use pelo menos $minNewPasswordLength caracteres.';
+    }
+    return null;
+  }
+
+  static String? passwordConfirmation(String? value, String password) {
+    if (value == null || value.isEmpty) {
+      return 'Confirme a nova senha.';
+    }
+    if (value != password) {
+      return 'As senhas não conferem.';
+    }
+    return null;
+  }
 }
