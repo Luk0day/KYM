@@ -1,6 +1,7 @@
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:uuid/uuid.dart';
 
+import '../modules/agenda/agenda_module.dart';
 import '../modules/auth/auth_module.dart';
 import '../modules/auth/infra/datasources/auth_datasource.dart';
 import '../modules/equipment/domain/repositories/equipment_repository.dart';
@@ -56,6 +57,7 @@ class AppModule extends Module {
           authenticatedRoute: HomeRoutes.root,
         ),
       )
+      ..module(AgendaModule())
       ..module(HomeModule());
   }
 }

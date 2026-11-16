@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 import '../../shared/presenter/widgets/kym_button.dart';
+import '../agenda/domain/usecases/build_agenda.dart';
+import '../agenda/domain/usecases/watch_agenda.dart';
+import '../agenda/presenter/controllers/agenda_controller.dart';
+import '../agenda/presenter/pages/agenda_page.dart';
 import '../auth/auth_routes.dart';
+import '../auth/domain/entities/authenticated_user.dart';
 import '../auth/domain/entities/user_role.dart';
 import '../auth/domain/entities/user_role_permissions.dart';
 import '../auth/presenter/controllers/session_controller.dart';
@@ -18,6 +23,8 @@ class HomeModule extends Module {
   String? get path => HomeRoutes.root;
 
   static UserRole? _currentRole() => inject<SessionController>().user?.role;
+
+  static AuthenticatedUser _currentUser() => inject<SessionController>().user!;
 
   static String _initialRoute(UserRole role) =>
       HomeRoutes.of(role.initialDestination);
@@ -73,7 +80,15 @@ class HomeModule extends Module {
           ..route(
             HomeRoutes.agendaPath,
             guards: [_guard(AppDestination.agenda)],
-            child: (context, _) => const TabPlaceholderPage(title: 'Agenda'),
+            provide: (scoped) {
+              scoped.addChangeNotifier<AgendaController>(
+                (WatchAgenda watch, BuildAgenda build, AgendaFilterMemory m) =>
+                    AgendaController(watch, build, m, _currentUser()),
+              );
+            },
+            child: (context, _) => AgendaPage(
+              onOpenProfile: () => context.navigate(HomeRoutes.perfil),
+            ),
           )
           ..route(
             HomeRoutes.qrCodesPath,
