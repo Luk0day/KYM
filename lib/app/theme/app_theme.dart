@@ -9,6 +9,14 @@ abstract final class AppTheme {
   static const double buttonHeight = 48;
   static const double fieldHeight = 52;
 
+  static const List<BoxShadow> accentShadow = [
+    BoxShadow(
+      color: AppColors.accentShadow,
+      blurRadius: 12,
+      offset: Offset(0, 4),
+    ),
+  ];
+
   static const RoundedRectangleBorder _buttonShape = RoundedRectangleBorder(
     borderRadius: BorderRadius.all(Radius.circular(radius)),
   );
