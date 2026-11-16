@@ -63,6 +63,15 @@ abstract final class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
+  static const TextStyle navBadge = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 10,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.4,
+    height: 1,
+    color: AppColors.onAccent,
+  );
+
   static const TextStyle highlightNumber = TextStyle(
     fontFamily: fontFamily,
     fontSize: 34,

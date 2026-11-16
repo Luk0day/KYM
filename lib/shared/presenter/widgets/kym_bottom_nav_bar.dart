@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../app/theme/app_theme.dart';
 
 class KymNavItem {
   const KymNavItem({
@@ -19,6 +20,9 @@ class KymNavItem {
   final String? badge;
 }
 
+/// Barra inferior do Figma. Quando há um item de destaque (o QR), a barra
+/// reserva [prominentOverhang] acima da linha para o círculo, assim a parte
+/// do círculo que sobe além da barra também recebe toque.
 class KymBottomNavBar extends StatelessWidget {
   const KymBottomNavBar({
     super.key,
@@ -28,6 +32,7 @@ class KymBottomNavBar extends StatelessWidget {
   });
 
   static const double height = 64;
+  static const double prominentOverhang = 22;
 
   final List<KymNavItem> items;
   final int? selectedIndex;
@@ -35,36 +40,50 @@ class KymBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final overhang = items.any((item) => item.prominent)
+        ? prominentOverhang
+        : 0.0;
+
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: 1.3,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.border)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: height,
-            child: Row(
-              children: [
-                for (var i = 0; i < items.length; i++)
-                  Expanded(
-                    child: items[i].prominent
-                        ? _ProminentItem(
-                            item: items[i],
-                            onTap: () => onSelected(i),
-                          )
-                        : _NavItem(
-                            item: items[i],
-                            selected: i == selectedIndex,
-                            onTap: () => onSelected(i),
-                          ),
-                  ),
-              ],
+      child: Stack(
+        children: [
+          Positioned.fill(
+            top: overhang,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border(top: BorderSide(color: AppColors.border)),
+              ),
             ),
           ),
-        ),
+          SafeArea(
+            top: false,
+            child: SizedBox(
+              height: overhang + height,
+              child: Row(
+                children: [
+                  for (var i = 0; i < items.length; i++)
+                    Expanded(
+                      child: items[i].prominent
+                          ? _ProminentItem(
+                              item: items[i],
+                              onTap: () => onSelected(i),
+                            )
+                          : Padding(
+                              padding: EdgeInsets.only(top: overhang),
+                              child: _NavItem(
+                                item: items[i],
+                                selected: i == selectedIndex,
+                                onTap: () => onSelected(i),
+                              ),
+                            ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -135,10 +154,9 @@ class _ProminentItem extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Stack(
-            clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: [
-              Positioned(top: -22, child: KymProminentNavIcon(item: item)),
+              KymProminentNavIcon(item: item),
               Positioned(
                 left: 0,
                 right: 0,
@@ -166,6 +184,8 @@ class KymProminentNavIcon extends StatelessWidget {
     this.size = _ProminentItem._size,
   });
 
+  static const double _iconRatio = 0.4;
+
   final KymNavItem item;
   final double size;
 
@@ -174,31 +194,17 @@ class KymProminentNavIcon extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.accent,
         shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppTheme.accentShadow,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(item.icon, color: Colors.white, size: size * 0.4),
+          Icon(item.icon, color: AppColors.onAccent, size: size * _iconRatio),
           if (item.badge != null)
-            Text(
-              item.badge!,
-              style: AppTextStyles.label.copyWith(
-                color: Colors.white,
-                fontSize: 8,
-                letterSpacing: 0.4,
-                height: 1,
-              ),
-            ),
+            Text(item.badge!, style: AppTextStyles.navBadge),
         ],
       ),
     );

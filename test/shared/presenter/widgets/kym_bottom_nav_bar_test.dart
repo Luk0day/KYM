@@ -48,6 +48,58 @@ void main() {
       expect(taps, [2, 1]);
     });
 
+    testWidgets(
+      'topo do botão central, acima da linha da barra, recebe toque',
+      (tester) async {
+        final taps = <int>[];
+        await tester.pumpWidget(
+          _wrap(
+            KymBottomNavBar(
+              items: _items,
+              selectedIndex: 0,
+              onSelected: taps.add,
+            ),
+          ),
+        );
+
+        final circle = tester.getRect(find.byType(KymProminentNavIcon));
+        final barTop = tester
+            .getRect(
+              find
+                  .descendant(
+                    of: find.byType(KymBottomNavBar),
+                    matching: find.byType(DecoratedBox),
+                  )
+                  .first,
+            )
+            .top;
+        expect(circle.top, lessThan(barTop));
+
+        await tester.tapAt(Offset(circle.center.dx, circle.top + 4));
+
+        expect(taps, [1]);
+      },
+    );
+
+    testWidgets('sem botão central a barra não reserva espaço acima', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          KymBottomNavBar(
+            items: [_items.first, _items.last],
+            selectedIndex: 0,
+            onSelected: (_) {},
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSize(find.byType(KymBottomNavBar)).height,
+        KymBottomNavBar.height,
+      );
+    });
+
     testWidgets('destino selecionado usa a cor primária', (tester) async {
       await tester.pumpWidget(
         _wrap(
