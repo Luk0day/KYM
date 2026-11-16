@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 
-enum KymChipTone { pending, overdue, done }
+enum KymChipTone { pending, overdue, done, neutral }
 
 class KymChip extends StatelessWidget {
   const KymChip({super.key, required this.label, required this.tone});
@@ -17,6 +17,7 @@ class KymChip extends StatelessWidget {
       KymChipTone.pending => (AppColors.pendingBg, AppColors.pendingFg),
       KymChipTone.overdue => (AppColors.overdueBg, AppColors.overdueFg),
       KymChipTone.done => (AppColors.doneBg, AppColors.doneFg),
+      KymChipTone.neutral => (AppColors.inactive, AppColors.textSecondary),
     };
 
     return Container(
