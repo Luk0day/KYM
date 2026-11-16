@@ -1,14 +1,14 @@
-/// Formato do texto dos QR Codes do KYM. Dart puro.
-///
-/// ```
-/// kym:1:S:<qr_token>   -> loja
-/// kym:1:E:<qr_token>   -> equipamento
-/// ```
-///
-/// O `<qr_token>` é o uuid da coluna `qr_token` (e não o `id`), em minúsculas.
-/// Assim, um QR impresso é invalidado gerando um token novo, sem mexer no
-/// registro. Não há assinatura criptográfica: o token só identifica, quem
-/// autoriza é o servidor (RLS).
+// Formato do texto dos QR Codes do KYM. Dart puro.
+//
+// ```
+// kym:1:S:<qr_token>   -> loja
+// kym:1:E:<qr_token>   -> equipamento
+// ```
+//
+// O `<qr_token>` é o uuid da coluna `qr_token` (e não o `id`), em minúsculas.
+// Assim, um QR impresso é invalidado gerando um token novo, sem mexer no
+// registro. Não há assinatura criptográfica: o token só identifica, quem
+// autoriza é o servidor (RLS).
 
 /// O que o QR Code identifica.
 enum QrTargetType {
