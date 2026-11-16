@@ -5,7 +5,13 @@ import '../tables.dart';
 
 part 'maintenance_orders_dao.g.dart';
 
-@DriftAccessor(tables: [MaintenanceOrders])
+typedef AgendaRow = ({
+  MaintenanceOrder order,
+  Equipment equipment,
+  Store store,
+});
+
+@DriftAccessor(tables: [MaintenanceOrders, Equipments, Stores])
 class MaintenanceOrdersDao extends DatabaseAccessor<AppDatabase>
     with _$MaintenanceOrdersDaoMixin {
   MaintenanceOrdersDao(super.db);
@@ -52,4 +58,39 @@ class MaintenanceOrdersDao extends DatabaseAccessor<AppDatabase>
             ..where((o) => o.equipmentId.equals(equipmentId))
             ..orderBy([(o) => OrderingTerm.desc(o.createdAt)]))
           .get();
+
+  /// Ordens com o equipamento e a loja, para a agenda. Sem as canceladas e,
+  /// quando [assignedTo] vier preenchido, só as atribuídas a essa pessoa.
+  Stream<List<AgendaRow>> watchAgenda({String? assignedTo}) {
+    final query =
+        select(maintenanceOrders).join([
+            innerJoin(
+              equipments,
+              equipments.id.equalsExp(maintenanceOrders.equipmentId),
+            ),
+            innerJoin(stores, stores.id.equalsExp(maintenanceOrders.storeId)),
+          ])
+          ..where(
+            maintenanceOrders.status.equalsValue(OrderStatus.cancelada).not(),
+          )
+          ..orderBy([
+            OrderingTerm.asc(maintenanceOrders.scheduledFor),
+            OrderingTerm.asc(equipments.name),
+          ]);
+
+    if (assignedTo != null) {
+      query.where(maintenanceOrders.assignedTo.equals(assignedTo));
+    }
+
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          (
+            order: row.readTable(maintenanceOrders),
+            equipment: row.readTable(equipments),
+            store: row.readTable(stores),
+          ),
+      ],
+    );
+  }
 }
