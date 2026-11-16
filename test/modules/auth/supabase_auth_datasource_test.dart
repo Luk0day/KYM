@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kym/modules/auth/domain/entities/password_recovery_event.dart';
 import 'package:kym/modules/auth/domain/errors/auth_failure.dart';
 import 'package:kym/modules/auth/external/datasources/supabase_auth_datasource.dart';
+import 'package:kym/modules/auth/infra/datasources/google_id_token_provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,16 +13,21 @@ class _MockSupabaseClient extends Mock implements SupabaseClient {}
 
 class _MockGoTrueClient extends Mock implements GoTrueClient {}
 
-Matcher _failsWith(AuthFailureType type) => throwsA(
-  isA<AuthFailure>().having((f) => f.type, 'type', type),
-);
+class _MockGoogleIdTokenProvider extends Mock
+    implements GoogleIdTokenProvider {}
+
+Matcher _failsWith(AuthFailureType type) =>
+    throwsA(isA<AuthFailure>().having((f) => f.type, 'type', type));
 
 void main() {
   late _MockSupabaseClient client;
   late _MockGoTrueClient auth;
   late SupabaseAuthDataSource dataSource;
 
-  setUpAll(() => registerFallbackValue(UserAttributes()));
+  setUpAll(() {
+    registerFallbackValue(UserAttributes());
+    registerFallbackValue(OAuthProvider.google);
+  });
 
   setUp(() {
     client = _MockSupabaseClient();
@@ -70,9 +77,7 @@ void main() {
     });
 
     test('código over_email_send_rate_limit vira rateLimited', () {
-      resetThrows(
-        AuthException('limit', code: 'over_email_send_rate_limit'),
-      );
+      resetThrows(AuthException('limit', code: 'over_email_send_rate_limit'));
 
       expect(
         () => dataSource.sendPasswordResetEmail(email: 'tecnico@kym.test'),
@@ -96,9 +101,8 @@ void main() {
     }
 
     test('chama updateUser com a nova senha', () async {
-      when(() => auth.updateUser(any())).thenAnswer(
-        (_) async => UserResponse.fromJson({}),
-      );
+      when(() => auth.updateUser(any()))
+          .thenAnswer((_) async => UserResponse.fromJson({}));
 
       await dataSource.updatePassword(password: 'novaSenha1');
 
@@ -145,10 +149,7 @@ void main() {
         AuthException('boom', code: 'unexpected_failure', statusCode: '500'),
         AuthFailureType.unexpected,
       ),
-      'sem internet': (
-        AuthRetryableFetchException(),
-        AuthFailureType.network,
-      ),
+      'sem internet': (AuthRetryableFetchException(), AuthFailureType.network),
     };
 
     for (final entry in cases.entries) {
@@ -163,6 +164,135 @@ void main() {
     }
   });
 
+  group('signInWithEmail', () {
+    void signInReturns(Future<AuthResponse> Function() answer) {
+      when(
+        () => auth.signInWithPassword(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenAnswer((_) => answer());
+    }
+
+    test('credenciais inválidas viram invalidCredentials', () {
+      signInReturns(
+        () => throw AuthApiException(
+          'Invalid login credentials',
+          statusCode: '400',
+          code: 'invalid_credentials',
+        ),
+      );
+
+      expect(
+        () => dataSource.signInWithEmail(
+          email: 'tecnico@kym.test',
+          password: 'errada',
+        ),
+        _failsWith(AuthFailureType.invalidCredentials),
+      );
+    });
+
+    test('resposta sem usuário vira unexpected', () {
+      signInReturns(() async => AuthResponse());
+
+      expect(
+        () => dataSource.signInWithEmail(
+          email: 'tecnico@kym.test',
+          password: 'kym12345',
+        ),
+        _failsWith(AuthFailureType.unexpected),
+      );
+    });
+  });
+
+  group('signInWithGoogle', () {
+    test('sem provedor configurado vira unexpected', () {
+      expect(
+        () => dataSource.signInWithGoogle(),
+        _failsWith(AuthFailureType.unexpected),
+      );
+    });
+
+    test('desistência na escolha da conta vira cancelled', () {
+      final provider = _MockGoogleIdTokenProvider();
+      when(provider.fetchIdToken)
+          .thenThrow(const AuthFailure(AuthFailureType.cancelled));
+
+      expect(
+        () => SupabaseAuthDataSource(
+          client,
+          googleProvider: provider,
+        ).signInWithGoogle(),
+        _failsWith(AuthFailureType.cancelled),
+      );
+    });
+
+    test('resposta sem usuário vira unexpected', () {
+      final provider = _MockGoogleIdTokenProvider();
+      when(provider.fetchIdToken).thenAnswer((_) async => 'id-token');
+      when(
+        () => auth.signInWithIdToken(
+          provider: any(named: 'provider'),
+          idToken: any(named: 'idToken'),
+        ),
+      ).thenAnswer((_) async => AuthResponse());
+
+      expect(
+        () => SupabaseAuthDataSource(
+          client,
+          googleProvider: provider,
+        ).signInWithGoogle(),
+        _failsWith(AuthFailureType.unexpected),
+      );
+    });
+  });
+
+  group('getCurrentUser e signOut', () {
+    test('sem sessão devolve null', () async {
+      when(() => auth.getSession()).thenAnswer((_) async => null);
+
+      expect(await dataSource.getCurrentUser(), isNull);
+    });
+
+    test('sem internet vira network', () {
+      when(() => auth.getSession()).thenThrow(const SocketException('offline'));
+
+      expect(
+        () => dataSource.getCurrentUser(),
+        _failsWith(AuthFailureType.network),
+      );
+    });
+
+    test('tempo esgotado vira network', () {
+      when(() => auth.getSession()).thenThrow(TimeoutException('lento'));
+
+      expect(
+        () => dataSource.getCurrentUser(),
+        _failsWith(AuthFailureType.network),
+      );
+    });
+
+    test('erro desconhecido vira unexpected', () {
+      when(() => auth.getSession()).thenThrow(StateError('boom'));
+
+      expect(
+        () => dataSource.getCurrentUser(),
+        _failsWith(AuthFailureType.unexpected),
+      );
+    });
+
+    test('sair encerra o Supabase e a conta Google', () async {
+      final provider = _MockGoogleIdTokenProvider();
+      when(provider.signOut).thenAnswer((_) async {});
+      when(() => auth.signOut()).thenAnswer((_) async {});
+
+      await SupabaseAuthDataSource(client, googleProvider: provider).signOut();
+
+      verify(() => auth.signOut()).called(1);
+      verify(provider.signOut).called(1);
+    });
+  });
+
   group('passwordRecoveryEvents', () {
     late StreamController<AuthState> authStates;
 
@@ -175,9 +305,7 @@ void main() {
 
     test('passwordRecovery vira started e ignora os outros eventos', () async {
       final events = <PasswordRecoveryEvent>[];
-      final subscription = dataSource.passwordRecoveryEvents.listen(
-        events.add,
-      );
+      final subscription = dataSource.passwordRecoveryEvents.listen(events.add);
 
       authStates
         ..add(const AuthState(AuthChangeEvent.signedIn, null))
@@ -190,9 +318,7 @@ void main() {
 
     test('erro do link expirado vira linkInvalid', () async {
       final events = <PasswordRecoveryEvent>[];
-      final subscription = dataSource.passwordRecoveryEvents.listen(
-        events.add,
-      );
+      final subscription = dataSource.passwordRecoveryEvents.listen(events.add);
 
       authStates.addError(
         AuthException(
