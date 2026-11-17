@@ -48,7 +48,9 @@ class Equipments extends Table {
   TextColumn get model => text().nullable()();
   TextColumn get serialNumber => text().nullable()();
   TextColumn get qrToken => text().unique()();
-  TextColumn get status => text().withDefault(const Constant('operando'))();
+  TextColumn get status => text()
+      .map(const EquipmentStatusConverter())
+      .clientDefault(() => EquipmentStatus.operando.dbValue)();
   DateTimeColumn get installedAt => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();

@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../modules/auth/auth_module.dart';
 import '../modules/auth/infra/datasources/auth_datasource.dart';
 import '../modules/equipment/domain/repositories/equipment_repository.dart';
+import '../modules/equipment/equipment_module.dart';
 import '../modules/equipment/infra/repositories/equipment_repository_impl.dart';
 import '../modules/home/home_module.dart';
 import '../modules/home/home_routes.dart';
@@ -58,6 +59,7 @@ class AppModule extends Module {
         ),
       )
       ..module(HomeModule())
+      ..module(EquipmentModule())
       ..module(StoresModule());
   }
 }
