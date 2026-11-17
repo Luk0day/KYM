@@ -9,7 +9,6 @@ import '../auth/presenter/controllers/session_controller.dart';
 import '../auth/presenter/guards/role_guard.dart';
 import '../auth/presenter/utils/user_role_label.dart';
 import 'home_routes.dart';
-import 'presenter/pages/qr_scanner_placeholder_page.dart';
 import 'presenter/pages/shell_page.dart';
 import 'presenter/pages/tab_placeholder_page.dart';
 
@@ -42,12 +41,6 @@ class HomeModule extends Module {
   @override
   void register(ModularContext c) {
     c
-      ..route(
-        HomeRoutes.qrPath,
-        guards: [_guard(AppDestination.qr)],
-        child: (context, _) =>
-            QrScannerPlaceholderPage(onBack: () => context.pop()),
-      )
       ..route(
         '/',
         guards: [_shellGuard],

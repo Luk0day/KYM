@@ -72,7 +72,7 @@ Legenda: ✅ implementado · 🚧 parcial · ⬜ não iniciado (situação na br
 | RF05 | Exibir os dados da loja, o mapa com o endereço e a lista de equipamentos | ⬜ |
 | RF06 | Exibir informações, status e histórico de manutenção de cada equipamento | ⬜ |
 | RF07 | Abrir um chamado de manutenção corretiva, com descrição e fotos, a partir do equipamento | ⬜ |
-| RF08 | Ler QR Codes com a câmera e tratar o código lido: loja (check-in e check-out) ou equipamento | ⬜ |
+| RF08 | Ler QR Codes com a câmera e tratar o código lido: loja (check-in e check-out) ou equipamento | 🚧 |
 | RF09 | Registrar o check-in e o check-out do técnico na loja, com data e hora, pela leitura do QR Code da loja | ⬜ |
 | RF10 | Consultar a agenda de manutenções preventivas e corretivas, com filtros por status e período | ⬜ |
 | RF11 | Registrar a execução de uma manutenção: checklist, observações e fotos | ⬜ |
@@ -107,7 +107,7 @@ O aplicativo prevê **12 telas**, cada uma com função própria.
 | 4 | Lojas | Listar as lojas, com busca e filtro | Técnico, gestor e lojista (cada um vê só as suas) | ⬜ |
 | 5 | Detalhes da loja | Mostrar dados e mapa, listar os equipamentos e iniciar o check-in lendo o QR da loja | Técnico, gestor e lojista | ⬜ |
 | 6 | Detalhes do equipamento | Mostrar informações, status e histórico, e permitir abrir um chamado corretivo | Técnico, gestor e lojista | ⬜ |
-| 7 | Leitor de QR Code | Abrir a câmera e tratar o código lido: loja (check-in e check-out) ou equipamento | Técnico e lojista | ⬜ |
+| 7 | Leitor de QR Code | Abrir a câmera e tratar o código lido: loja (check-in e check-out) ou equipamento | Técnico e lojista | 🚧 |
 | 8 | Agenda | Listar manutenções preventivas e corretivas, com filtro por status e período | Técnico e gestor | ⬜ |
 | 9 | Registro de manutenção | Preencher checklist, observações e fotos e concluir o serviço | Técnico | ⬜ |
 | 10 | Assinatura | Coletar a assinatura do responsável da loja e gerar o comprovante em PDF | Técnico (o responsável da loja assina no aparelho dele) | ⬜ |
