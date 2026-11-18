@@ -5,6 +5,8 @@ import 'package:kym/modules/equipment/domain/entities/equipment_status.dart';
 import 'package:kym/modules/equipment/domain/repositories/equipment_repository.dart';
 import 'package:kym/modules/orders/domain/entities/maintenance_order.dart';
 import 'package:kym/modules/orders/domain/repositories/order_repository.dart';
+import 'package:kym/modules/stores/domain/entities/store.dart';
+import 'package:kym/modules/stores/domain/repositories/store_repository.dart';
 
 class FakeEquipmentRepository implements EquipmentRepository {
   FakeEquipmentRepository([List<Equipment> items = const []]) : _items = items;
@@ -121,4 +123,32 @@ MaintenanceOrder orderFixture({
   assignedTo: assignedTo,
   createdAt: DateTime(2026, 10, 1),
   updatedAt: DateTime(2026, 10, 1),
+);
+
+class FakeStoreRepository implements StoreRepository {
+  FakeStoreRepository([this.items = const []]);
+
+  final List<Store> items;
+
+  @override
+  Stream<List<Store>> watchAll() => Stream.value(items);
+
+  @override
+  Stream<Store?> watchById(String id) =>
+      Stream.value(items.where((s) => s.id == id).firstOrNull);
+
+  @override
+  Future<Store?> findById(String id) async =>
+      items.where((s) => s.id == id).firstOrNull;
+
+  @override
+  Future<Store?> findByQrToken(String qrToken) async => null;
+}
+
+Store storeFixture({String id = 's1', String name = 'Loja Centro'}) => Store(
+  id: id,
+  name: name,
+  qrToken: 'qr-$id',
+  active: true,
+  createdAt: DateTime(2026, 1, 1),
 );
