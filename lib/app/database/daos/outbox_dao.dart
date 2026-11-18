@@ -45,6 +45,13 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
         ..orderBy(_creationOrder))
       .get();
 
+  /// Itens que ainda não chegaram ao servidor (pendentes, em envio ou falhos).
+  /// O pull (B20) não sobrescreve os registros a que eles se referem.
+  Future<List<OutboxEntry>> listUnsent() => (select(outbox)
+        ..where((o) => o.status.isIn(_unsent.map((s) => s.name)))
+        ..orderBy(_creationOrder))
+      .get();
+
   /// Itens que podem ser enviados: pendentes e falhos que ainda têm
   /// tentativas, na ordem em que foram criados. A espera entre tentativas é
   /// decidida por quem processa a fila.

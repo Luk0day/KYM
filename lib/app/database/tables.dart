@@ -27,6 +27,9 @@ class Stores extends Table {
   TextColumn get qrToken => text().unique()();
   BoolColumn get active => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
+
+  /// `updated_at` do servidor (B20). Nulo = ainda não veio do servidor.
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
@@ -52,6 +55,9 @@ class Equipments extends Table {
   DateTimeColumn get installedAt => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
+
+  /// `updated_at` do servidor (B20). Nulo = ainda não veio do servidor.
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
@@ -130,4 +136,24 @@ class Outbox extends Table {
   /// Última vez que o item foi enviado (com sucesso ou não). Serve à espera
   /// crescente entre tentativas e à limpeza dos itens concluídos.
   DateTimeColumn get lastAttemptAt => dateTime().nullable()();
+}
+
+/// Marca da baixada incremental (B20), uma linha por tabela do servidor.
+/// Fica no Drift para ser apagada junto com o resto no logout (B16).
+@DataClassName('SyncStateEntry')
+class SyncState extends Table {
+  /// Tabela do servidor (`stores`, `equipment`…).
+  TextColumn get remoteTable => text()();
+
+  /// Maior `updated_at` recebido, como o servidor mandou (ISO 8601 em UTC,
+  /// com microssegundos). Fica em texto para não perder precisão: o relógio
+  /// do aparelho não entra na conta.
+  TextColumn get cursor => text().nullable()();
+
+  /// Última reconciliação completa (que também remove o que sumiu do
+  /// servidor). Hora do aparelho; só decide quando fazer a próxima.
+  DateTimeColumn get lastFullPullAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {remoteTable};
 }
