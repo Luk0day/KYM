@@ -1,13 +1,25 @@
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kym/app/app.dart';
 import 'package:kym/app/app_module.dart';
+import 'package:kym/app/database/app_database.dart';
 import 'package:kym/modules/auth/infra/datasources/fake_auth_datasource.dart';
 import 'package:kym/modules/home/home_routes.dart';
 import 'package:kym/modules/home/presenter/pages/qr_scanner_placeholder_page.dart';
 import 'package:kym/modules/home/presenter/pages/shell_page.dart';
 import 'package:kym/shared/presenter/widgets/kym_bottom_nav_bar.dart';
+
+/// Como 	estWidgets, mas desmonta o app no fim: ao cancelar os streams da aba
+/// Lojas o Drift agenda um timer, e ele não pode ficar pendente.
+void shellTest(String name, Future<void> Function(WidgetTester tester) body) {
+  testWidgets(name, (tester) async {
+    await body(tester);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(Duration.zero);
+  });
+}
 
 Future<void> _pumpApp(
   WidgetTester tester, {
@@ -17,10 +29,15 @@ Future<void> _pumpApp(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
+  // A aba Lojas lê o banco local, então o teste usa um em memória.
+  final db = AppDatabase.forTesting(NativeDatabase.memory());
+  addTearDown(db.close);
+
   await tester.pumpWidget(
     ModularApp(
       module: AppModule(
         authDataSourceFactory: () => FakeAuthDataSource(latency: Duration.zero),
+        databaseFactory: () => db,
       ),
       child: const KymApp(),
     ),
@@ -55,7 +72,7 @@ void _navigateFromRoot(WidgetTester tester, String path) {
 
 void main() {
   group('barra por perfil', () {
-    testWidgets('técnico: Painel, Lojas, Escanear, Agenda e Perfil', (
+    shellTest('técnico: Painel, Lojas, Escanear, Agenda e Perfil', (
       tester,
     ) async {
       await _pumpApp(tester);
@@ -72,7 +89,7 @@ void main() {
       expect(find.text('Técnico'), findsWidgets);
     });
 
-    testWidgets('gestor: Painel, Lojas, Agenda, QR Codes e Perfil', (
+    shellTest('gestor: Painel, Lojas, Agenda, QR Codes e Perfil', (
       tester,
     ) async {
       await _pumpApp(tester);
@@ -89,7 +106,7 @@ void main() {
       expect(find.text('Olá, Gestor'), findsOneWidget);
     });
 
-    testWidgets('lojista: Lojas, Escanear e Perfil, abrindo em Lojas', (
+    shellTest('lojista: Lojas, Escanear e Perfil, abrindo em Lojas', (
       tester,
     ) async {
       await _pumpApp(tester);
@@ -103,7 +120,7 @@ void main() {
   });
 
   group('navegação', () {
-    testWidgets('trocar de aba mantém a barra e mostra a nova tela', (
+    shellTest('trocar de aba mantém a barra e mostra a nova tela', (
       tester,
     ) async {
       await _pumpApp(tester);
@@ -118,7 +135,7 @@ void main() {
       expect(bar.selectedIndex, 3);
     });
 
-    testWidgets('botão central abre o leitor em tela cheia e volta', (
+    shellTest('botão central abre o leitor em tela cheia e volta', (
       tester,
     ) async {
       await _pumpApp(tester);
@@ -137,7 +154,7 @@ void main() {
       expect(find.text('Olá, Técnico'), findsOneWidget);
     });
 
-    testWidgets('sair e entrar com outro perfil troca a barra', (tester) async {
+    shellTest('sair e entrar com outro perfil troca a barra', (tester) async {
       await _pumpApp(tester);
       await _signIn(tester, 'tecnico@kym.test');
       await _signOut(tester);
@@ -151,7 +168,7 @@ void main() {
   });
 
   group('guards', () {
-    testWidgets('técnico na rota de QR Codes volta para o Painel', (
+    shellTest('técnico na rota de QR Codes volta para o Painel', (
       tester,
     ) async {
       await _pumpApp(tester);
@@ -166,7 +183,7 @@ void main() {
       expect(find.text('Olá, Técnico'), findsOneWidget);
     });
 
-    testWidgets('gestor não abre o leitor de QR', (tester) async {
+    shellTest('gestor não abre o leitor de QR', (tester) async {
       await _pumpApp(tester);
       await _signIn(tester, 'gestor@kym.test');
 
@@ -177,7 +194,7 @@ void main() {
       expect(find.text('Olá, Gestor'), findsOneWidget);
     });
 
-    testWidgets('lojista na Agenda volta para Lojas', (tester) async {
+    shellTest('lojista na Agenda volta para Lojas', (tester) async {
       await _pumpApp(tester);
       await _signIn(tester, 'lojista@kym.test');
       await tester.tap(find.text('Perfil'));
@@ -190,7 +207,7 @@ void main() {
       expect(find.text('Agenda'), findsNothing);
     });
 
-    testWidgets('/home abre a aba inicial do perfil', (tester) async {
+    shellTest('/home abre a aba inicial do perfil', (tester) async {
       await _pumpApp(tester);
       await _signIn(tester, 'gestor@kym.test');
       await tester.tap(find.text('Perfil'));
@@ -204,7 +221,7 @@ void main() {
   });
 
   group('layout e acessibilidade', () {
-    testWidgets('tela larga usa NavigationRail com os mesmos destinos', (
+    shellTest('tela larga usa NavigationRail com os mesmos destinos', (
       tester,
     ) async {
       await _pumpApp(tester, size: const Size(1024, 768));
@@ -226,7 +243,7 @@ void main() {
       );
     });
 
-    testWidgets('girar a tela mantém a aba atual', (tester) async {
+    shellTest('girar a tela mantém a aba atual', (tester) async {
       await _pumpApp(tester);
       await _signIn(tester, 'tecnico@kym.test');
       await tester.tap(find.text('Agenda'));
@@ -239,7 +256,7 @@ void main() {
       expect(find.text('Agenda'), findsNWidgets(2));
     });
 
-    testWidgets('celular pequeno com fonte em 200% não quebra a barra', (
+    shellTest('celular pequeno com fonte em 200% não quebra a barra', (
       tester,
     ) async {
       tester.platformDispatcher.textScaleFactorTestValue = 2.0;
@@ -252,7 +269,7 @@ void main() {
       expect(find.byType(KymBottomNavBar), findsOneWidget);
     });
 
-    testWidgets('barra segue as diretrizes de acessibilidade', (tester) async {
+    shellTest('barra segue as diretrizes de acessibilidade', (tester) async {
       final handle = tester.ensureSemantics();
       await _pumpApp(tester);
       await _signIn(tester, 'tecnico@kym.test');

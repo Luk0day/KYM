@@ -16,6 +16,8 @@ class KymTextField extends StatelessWidget {
     this.autocorrect = true,
     this.enabled = true,
     this.suffixIcon,
+    this.prefixIcon,
+    this.hideLabel = false,
     this.validator,
     this.onChanged,
     this.onFieldSubmitted,
@@ -32,6 +34,10 @@ class KymTextField extends StatelessWidget {
   final bool autocorrect;
   final bool enabled;
   final Widget? suffixIcon;
+  final Widget? prefixIcon;
+
+  /// Esconde o rótulo visual (o campo de busca só tem o placeholder).
+  final bool hideLabel;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onFieldSubmitted;
@@ -41,8 +47,10 @@ class KymTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.fieldLabel),
-        const SizedBox(height: 6),
+        if (!hideLabel) ...[
+          Text(label, style: AppTextStyles.fieldLabel),
+          const SizedBox(height: 6),
+        ],
         TextFormField(
           controller: controller,
           focusNode: focusNode,
@@ -56,8 +64,10 @@ class KymTextField extends StatelessWidget {
           onChanged: onChanged,
           onFieldSubmitted: onFieldSubmitted,
           decoration: InputDecoration(
-            hintText: hintText,
+            // Sem rótulo visual, o placeholder é o que o leitor de tela anuncia.
+            hintText: hintText ?? (hideLabel ? label : null),
             suffixIcon: suffixIcon,
+            prefixIcon: prefixIcon,
           ),
         ),
       ],

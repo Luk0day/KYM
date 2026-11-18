@@ -11,6 +11,7 @@ import '../modules/orders/domain/repositories/order_repository.dart';
 import '../modules/orders/infra/repositories/order_repository_impl.dart';
 import '../modules/stores/domain/repositories/store_repository.dart';
 import '../modules/stores/infra/repositories/store_repository_impl.dart';
+import '../modules/stores/stores_module.dart';
 import 'database/app_database.dart';
 import 'database/daos/equipments_dao.dart';
 import 'database/daos/maintenance_orders_dao.dart';
@@ -56,6 +57,7 @@ class AppModule extends Module {
           authenticatedRoute: HomeRoutes.root,
         ),
       )
-      ..module(HomeModule());
+      ..module(HomeModule())
+      ..module(StoresModule());
   }
 }
