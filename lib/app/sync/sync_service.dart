@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:drift/drift.dart' show Value;
 
@@ -118,24 +119,44 @@ class SyncService {
       _rerunRequested = true;
       return running;
     }
+    final SyncResult result;
     final future = _runUntilSettled();
     _running = future;
     try {
-      return await future;
+      result = await future;
     } finally {
       _running = null;
     }
+    // Pedido que chegou depois da última volta, mas antes de a trava ser
+    // liberada: atende agora para o item não ficar parado até o próximo
+    // gatilho.
+    if (_rerunRequested && !result.interrupted) {
+      _rerunRequested = false;
+      _trigger();
+    }
+    _scheduleRetry(result);
+    return result;
   }
 
   void _trigger() {
-    unawaited(sync().then(_scheduleRetry, onError: (Object _) {}));
+    unawaited(
+      sync().then<void>(
+        (_) {},
+        onError: (Object error, StackTrace stack) => developer.log(
+          'falha ao processar a outbox',
+          name: 'kym.sync',
+          error: error,
+          stackTrace: stack,
+        ),
+      ),
+    );
   }
 
   void _scheduleRetry(SyncResult result) {
     _retryTimer?.cancel();
     _retryTimer = null;
     final next = result.nextRetryAt;
-    // Sem gatilhos ligados (uso manual, testes) ou sem rede: quem acorda a
+    // Sem gatilhos ligados (testes, app sem sessão) ou sem rede: quem acorda a
     // fila é a reconexão.
     if (next == null || result.interrupted || _subscriptions.isEmpty) return;
     final wait = next.difference(_clock());
@@ -189,7 +210,11 @@ class SyncService {
       try {
         operation = _mapper.toRemote(entry);
       } on FormatException catch (e) {
-        await _outbox.markFailed(entry.id, 'payload inválido: ${e.message}');
+        await _outbox.markFailed(
+          entry.id,
+          'payload inválido: ${e.message}',
+          at: _clock(),
+        );
         failed++;
         blocked.add(entry.entityId);
         continue;
@@ -212,7 +237,7 @@ class SyncService {
       }
 
       final startedAt = _clock();
-      await _outbox.markProcessing(entry.id, at: startedAt);
+      await _outbox.markProcessing(entry.id);
       try {
         await _remote.push(operation);
       } on SyncNetworkException catch (e) {
@@ -225,7 +250,7 @@ class SyncService {
           nextRetryAt: nextRetryAt,
         );
       } catch (e) {
-        await _outbox.markFailed(entry.id, _describe(e));
+        await _outbox.markFailed(entry.id, _describe(e), at: startedAt);
         failed++;
         blocked.add(entry.entityId);
         if (entry.attempts + 1 < maxAttempts) {

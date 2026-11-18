@@ -174,16 +174,20 @@ void main() {
       expect((await entry(b)).status, OutboxStatus.pending);
     });
 
-    test('item falho volta a falho, com as mesmas tentativas', () async {
+    test('item falho volta a falho, com as mesmas tentativas e a mesma espera',
+        () async {
       final a = await enqueueOrder('o1');
-      await db.outboxDao.markFailed(a, 'erro antigo');
+      final failedAt = now.subtract(const Duration(minutes: 5));
+      await db.outboxDao.markFailed(a, 'erro antigo', at: failedAt);
       remote.onPush = (_) => throw const SyncNetworkException('offline');
 
       await service.sync();
 
+      expect(remote.pushed, hasLength(1));
       final item = await entry(a);
       expect(item.status, OutboxStatus.failed);
       expect(item.attempts, 1);
+      expect(item.lastAttemptAt, failedAt);
     });
 
     test('reenvio depois da queda não duplica o registro', () async {
@@ -394,11 +398,9 @@ void main() {
 
     test('apaga os concluídos com mais de 7 dias', () async {
       final old = await enqueueOrder('o1');
-      await db.outboxDao.markDone(old);
-      await (db.update(db.outbox)..where((o) => o.id.equals(old))).write(
-        OutboxCompanion(
-          lastAttemptAt: Value(now.subtract(const Duration(days: 8))),
-        ),
+      await db.outboxDao.markDone(
+        old,
+        at: now.subtract(const Duration(days: 8)),
       );
       final recent = await enqueueOrder('o2');
 
@@ -426,8 +428,9 @@ void main() {
   });
 
   group('gatilhos automáticos', () {
+    // Até 5 s: só espera o necessário, e o CI com cobertura é mais lento.
     Future<void> waitUntil(bool Function() condition) async {
-      for (var i = 0; i < 200 && !condition(); i++) {
+      for (var i = 0; i < 1000 && !condition(); i++) {
         await Future<void>.delayed(const Duration(milliseconds: 5));
       }
       expect(condition(), isTrue);
@@ -470,6 +473,27 @@ void main() {
 
       expect(remote.pushed, hasLength(3));
       expect((await entry(a)).attempts, 3);
+    });
+
+    test('sync manual também agenda a próxima tentativa', () async {
+      service = buildService(
+        retryPolicy: const RetryPolicy(
+          maxAttempts: 2,
+          baseDelay: Duration.zero,
+        ),
+      );
+      await enqueueOrder('o1');
+      remote.session = false;
+      service.start();
+      await pumpEventQueue();
+      expect(remote.pushed, isEmpty);
+
+      // Como o "Sincronizar agora" (B16) ou a reconexão (B21) fariam.
+      remote.session = true;
+      remote.onPush = (_) => throw const SyncServerException('recusado');
+      await service.sync();
+
+      await waitUntil(() => remote.pushed.length == 2);
     });
 
     test('dispose desliga os gatilhos', () async {

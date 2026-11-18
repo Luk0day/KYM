@@ -43,20 +43,27 @@ void main() {
     expect(dead.map((e) => e.id), [exhausted]);
   });
 
-  test('markProcessing grava a hora do envio', () async {
-    final id = await enqueue('a');
+  test('só o envio que termina grava a hora da tentativa', () async {
+    final failed = await enqueue('a');
+    final done = await enqueue('b');
+    final processing = await enqueue('c');
     final at = DateTime(2026, 11, 18, 9, 30);
 
-    await db.outboxDao.markProcessing(id, at: at);
+    await db.outboxDao.markFailed(failed, 'erro', at: at);
+    await db.outboxDao.markDone(done, at: at);
+    await db.outboxDao.markProcessing(processing);
 
-    final item = await entry(id);
-    expect(item.status, OutboxStatus.processing);
-    expect(item.lastAttemptAt, at);
+    expect((await entry(failed)).lastAttemptAt, at);
+    expect((await entry(done)).lastAttemptAt, at);
+    final inFlight = await entry(processing);
+    expect(inFlight.status, OutboxStatus.processing);
+    expect(inFlight.lastAttemptAt, isNull);
   });
 
   test('release devolve o estado anterior sem somar tentativa', () async {
     final id = await enqueue('a');
-    await failTimes(id, 1);
+    final at = DateTime(2026, 11, 18, 9, 30);
+    await db.outboxDao.markFailed(id, 'erro', at: at);
     await db.outboxDao.markProcessing(id);
 
     await db.outboxDao.release(id, OutboxStatus.failed);
@@ -64,6 +71,7 @@ void main() {
     final item = await entry(id);
     expect(item.status, OutboxStatus.failed);
     expect(item.attempts, 1);
+    expect(item.lastAttemptAt, at);
   });
 
   test('resetProcessing devolve à fila o que ficou no meio', () async {
@@ -95,12 +103,11 @@ void main() {
     final recentDone = await enqueue('b');
     final oldPending = await enqueue('c');
     final legacyDone = await enqueue('d');
-    await db.outboxDao.markProcessing(oldDone, at: DateTime(2026, 11, 1));
-    await db.outboxDao.markDone(oldDone);
-    await db.outboxDao.markProcessing(recentDone, at: DateTime(2026, 11, 17));
-    await db.outboxDao.markDone(recentDone);
-    await db.outboxDao.markProcessing(oldPending, at: DateTime(2026, 11, 1));
-    await db.outboxDao.release(oldPending, OutboxStatus.pending);
+    await db.outboxDao.markDone(oldDone, at: DateTime(2026, 11, 1));
+    await db.outboxDao.markDone(recentDone, at: DateTime(2026, 11, 17));
+    await (db.update(db.outbox)..where((o) => o.id.equals(oldPending))).write(
+      OutboxCompanion(createdAt: Value(DateTime(2026, 10, 1))),
+    );
     // Item sem lastAttemptAt (criado antes da v2): vale a data de criação.
     await (db.update(db.outbox)..where((o) => o.id.equals(legacyDone))).write(
       OutboxCompanion(
@@ -199,7 +206,7 @@ void main() {
     expect(items, hasLength(1));
     expect(items.single.entityId, 'p1');
     expect(items.single.lastAttemptAt, isNull);
-    await legacy.outboxDao.markProcessing(items.single.id);
+    await legacy.outboxDao.markFailed(items.single.id, 'erro');
     expect(
       (await legacy.outboxDao.findById(items.single.id))!.lastAttemptAt,
       isNotNull,

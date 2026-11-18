@@ -70,28 +70,35 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
             ..orderBy(_creationOrder))
           .get();
 
-  Future<void> markProcessing(int id, {DateTime? at}) =>
+  /// Não grava [Outbox.lastAttemptAt]: só conta como tentativa o envio que
+  /// termina (concluído ou falho). Se a rede cair, o item volta com [release]
+  /// sem mexer na espera entre tentativas.
+  Future<void> markProcessing(int id) =>
+      _setStatus(id, OutboxStatus.processing);
+
+  /// Marca como concluído e grava a hora do envio, usada pela limpeza.
+  Future<void> markDone(int id, {DateTime? at}) =>
       (update(outbox)..where((o) => o.id.equals(id))).write(
         OutboxCompanion(
-          status: const Value(OutboxStatus.processing),
+          status: const Value(OutboxStatus.done),
           lastAttemptAt: Value(at ?? DateTime.now()),
         ),
       );
-
-  Future<void> markDone(int id) => _setStatus(id, OutboxStatus.done);
 
   /// Marca o item como concluído e grava [syncedAt] no registro local a que
   /// ele se refere, na mesma transação. Exclusões não têm registro a marcar.
   Future<void> markDoneAndSynced(OutboxEntry entry, DateTime syncedAt) =>
       transaction(() async {
-        await markDone(entry.id);
+        await markDone(entry.id, at: syncedAt);
         if (entry.operation != OutboxOperation.delete) {
           await _markEntitySynced(entry.entity, entry.entityId, syncedAt);
         }
       });
 
-  /// Marca como falho, guarda o erro e soma uma tentativa.
-  Future<void> markFailed(int id, String error) => transaction(() async {
+  /// Marca como falho, guarda o erro, soma uma tentativa e grava a hora dela
+  /// (base da espera até a próxima).
+  Future<void> markFailed(int id, String error, {DateTime? at}) =>
+      transaction(() async {
         final current =
             await (select(outbox)..where((o) => o.id.equals(id))).getSingle();
         await (update(outbox)..where((o) => o.id.equals(id))).write(
@@ -99,12 +106,14 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
             status: const Value(OutboxStatus.failed),
             attempts: Value(current.attempts + 1),
             lastError: Value(error),
+            lastAttemptAt: Value(at ?? DateTime.now()),
           ),
         );
       });
 
   /// Devolve o item ao estado em que estava antes do envio, sem gastar
-  /// tentativa. Usado quando a rede cai no meio do envio.
+  /// tentativa nem mexer na hora da última tentativa. Usado quando a rede cai
+  /// no meio do envio.
   Future<void> release(int id, OutboxStatus previous) =>
       _setStatus(id, previous);
 
