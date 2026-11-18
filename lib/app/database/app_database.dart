@@ -31,7 +31,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -40,12 +40,13 @@ class AppDatabase extends _$AppDatabase {
           // Próximas versões: aumente `schemaVersion` e migre por etapas, sem
           // recriar tabelas (isso apagaria dados offline ainda não enviados).
           //
-          //   if (from < 2) {
-          //     await m.addColumn(stores, stores.novaColuna);
-          //   }
           //   if (from < 3) {
           //     await m.createTable(novaTabela);
           //   }
+          if (from < 2) {
+            // B19: espera entre tentativas e limpeza da outbox.
+            await m.addColumn(outbox, outbox.lastAttemptAt);
+          }
         },
         beforeOpen: (details) async {
           // O SQLite não aplica chaves estrangeiras por padrão.

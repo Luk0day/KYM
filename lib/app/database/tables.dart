@@ -126,4 +126,8 @@ class Outbox extends Table {
   IntColumn get attempts => integer().withDefault(const Constant(0))();
   TextColumn get lastError => text().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
+
+  /// Última vez que o item foi enviado (com sucesso ou não). Serve à espera
+  /// crescente entre tentativas e à limpeza dos itens concluídos.
+  DateTimeColumn get lastAttemptAt => dateTime().nullable()();
 }
