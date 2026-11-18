@@ -1,8 +1,10 @@
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kym/app/app.dart';
 import 'package:kym/app/app_module.dart';
+import 'package:kym/app/database/app_database.dart';
 import 'package:kym/modules/auth/infra/datasources/fake_auth_datasource.dart';
 import 'package:kym/modules/home/home_routes.dart';
 import 'package:kym/modules/home/presenter/pages/qr_scanner_placeholder_page.dart';
@@ -21,6 +23,7 @@ Future<void> _pumpApp(
     ModularApp(
       module: AppModule(
         authDataSourceFactory: () => FakeAuthDataSource(latency: Duration.zero),
+        databaseFactory: () => AppDatabase.forTesting(NativeDatabase.memory()),
       ),
       child: const KymApp(),
     ),
@@ -51,6 +54,11 @@ List<String> _barLabels(WidgetTester tester) {
 
 void _navigateFromRoot(WidgetTester tester, String path) {
   tester.element(find.byType(ShellPage)).navigate(path);
+}
+
+Future<void> _unmount(WidgetTester tester) async {
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pump(const Duration(milliseconds: 10));
 }
 
 void main() {
@@ -116,6 +124,8 @@ void main() {
       expect(find.text('Agenda'), findsNWidgets(2));
       final bar = tester.widget<KymBottomNavBar>(find.byType(KymBottomNavBar));
       expect(bar.selectedIndex, 3);
+
+      await _unmount(tester);
     });
 
     testWidgets('botão central abre o leitor em tela cheia e volta', (
@@ -224,6 +234,8 @@ void main() {
             .selectedIndex,
         3,
       );
+
+      await _unmount(tester);
     });
 
     testWidgets('girar a tela mantém a aba atual', (tester) async {
@@ -237,6 +249,8 @@ void main() {
 
       expect(find.byType(NavigationRail), findsOneWidget);
       expect(find.text('Agenda'), findsNWidgets(2));
+
+      await _unmount(tester);
     });
 
     testWidgets('celular pequeno com fonte em 200% não quebra a barra', (
