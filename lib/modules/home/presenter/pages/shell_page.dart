@@ -42,9 +42,8 @@ class _ShellPageState extends State<ShellPage> {
 
         final destinations = role.destinations;
         final current = HomeRoutes.destinationOf(context.routeState().uri.path);
-        final selectedIndex = current == null
-            ? null
-            : destinations.indexOf(current);
+        final index = current == null ? -1 : destinations.indexOf(current);
+        final selectedIndex = index >= 0 ? index : null;
         final wide =
             MediaQuery.sizeOf(context).width >= ShellPage.railBreakpoint;
 
@@ -97,6 +96,7 @@ class _Rail extends StatelessWidget {
       child: NavigationRail(
         backgroundColor: AppColors.surface,
         useIndicator: false,
+        groupAlignment: 0,
         labelType: NavigationRailLabelType.all,
         selectedIndex: selectedIndex,
         onDestinationSelected: onSelected,

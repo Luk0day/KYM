@@ -224,6 +224,7 @@ void main() {
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.destinations, hasLength(5));
       expect(rail.selectedIndex, 0);
+      expect(rail.groupAlignment, 0);
 
       await tester.tap(find.text('Agenda'));
       await tester.pumpAndSettle();
