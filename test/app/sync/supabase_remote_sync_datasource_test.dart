@@ -180,6 +180,73 @@ void main() {
     });
   });
 
+  group('fetchChanges', () {
+    const at = '2026-11-18T10:00:00.123456Z';
+
+    setUp(() {
+      respond = (_) async => jsonResponse([
+            {'id': 's1', 'updated_at': at},
+          ], 200);
+    });
+
+    test('sem cursor: tudo, ordenado por updated_at e id, com limite',
+        () async {
+      final rows = await dataSource.fetchChanges('stores', limit: 500);
+
+      expect(rows.single['id'], 's1');
+      final url = requests.single.url;
+      expect(requests.single.method, 'GET');
+      expect(url.path, '/rest/v1/stores');
+      expect(url.queryParameters['order'],
+          'updated_at.asc.nullslast,id.asc.nullslast');
+      expect(url.queryParameters['limit'], '500');
+      expect(url.queryParameters.containsKey('updated_at'), isFalse);
+      expect(url.queryParameters.containsKey('or'), isFalse);
+    });
+
+    test('cursor sem id: updated_at >= marca', () async {
+      await dataSource.fetchChanges(
+        'equipment',
+        after: const PullCursor(updatedAt: at),
+        limit: 100,
+      );
+
+      expect(requests.single.url.queryParameters['updated_at'], 'gte.$at');
+    });
+
+    test('cursor com id: keyset com o instante entre aspas', () async {
+      await dataSource.fetchChanges(
+        'maintenance_orders',
+        after: const PullCursor(updatedAt: at, id: 'o1'),
+        limit: 100,
+      );
+
+      expect(
+        requests.single.url.queryParameters['or'],
+        '(updated_at.gt."$at",and(updated_at.eq."$at",id.gt.o1))',
+      );
+    });
+
+    test('erros seguem a mesma classificação do envio', () async {
+      respond = (_) async => jsonResponse({
+            'code': '42703',
+            'message': 'column stores.updated_at does not exist',
+          }, 400);
+      await expectLater(
+        dataSource.fetchChanges('stores', limit: 10),
+        throwsA(
+          isA<SyncServerException>().having((e) => e.code, 'code', '42703'),
+        ),
+      );
+
+      respond = (_) async => throw const SocketException('sem rota');
+      await expectLater(
+        dataSource.fetchChanges('stores', limit: 10),
+        throwsA(isA<SyncNetworkException>()),
+      );
+    });
+  });
+
   group('sessão', () {
     test('sem usuário logado não há sessão', () async {
       expect(await dataSource.hasSession(), isFalse);

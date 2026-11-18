@@ -43,4 +43,62 @@ class FakeRemoteSyncDataSource implements RemoteSyncDataSource {
   }
 
   List<String> get pushedIds => [for (final op in pushed) op.id];
+
+  /// Chamado antes de cada página da baixada; lançar aqui simula a falha.
+  FutureOr<void> Function(String table, PullCursor? after)? onFetch;
+
+  /// Páginas pedidas, na ordem: (tabela, cursor).
+  final List<(String, PullCursor?)> fetches = [];
+
+  /// Grava uma linha "no servidor", como o painel do Supabase faria.
+  void serverUpsert(String table, Map<String, Object?> row) =>
+      rows.putIfAbsent(table, () => {})[row['id']! as String] = row;
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchChanges(
+    String table, {
+    PullCursor? after,
+    required int limit,
+  }) async {
+    fetches.add((table, after));
+    await onFetch?.call(table, after);
+
+    DateTime at(Map<String, Object?> r) =>
+        DateTime.parse(r['updated_at']! as String);
+    int compare(Map<String, Object?> a, Map<String, Object?> b) {
+      final byTime = at(a).compareTo(at(b));
+      return byTime != 0
+          ? byTime
+          : (a['id']! as String).compareTo(b['id']! as String);
+    }
+
+    final all = (rows[table]?.values ?? const <Map<String, Object?>>[])
+        .where((r) => r['updated_at'] != null)
+        .toList()
+      ..sort(compare);
+
+    // Mesma semântica do filtro do datasource real (gte ou keyset).
+    bool isAfterCursor(Map<String, Object?> r) {
+      if (after == null) return true;
+      final cursorAt = DateTime.parse(after.updatedAt);
+      final id = after.id;
+      if (id == null) return !at(r).isBefore(cursorAt);
+      return at(r).isAfter(cursorAt) ||
+          (at(r).isAtSameMomentAs(cursorAt) &&
+              (r['id']! as String).compareTo(id) > 0);
+    }
+
+    final page = [
+      for (final r in all.where(isAfterCursor).take(limit))
+        Map<String, dynamic>.of(r),
+    ];
+    return mapResult?.call(table, page) ?? page;
+  }
+
+  /// Troca a página devolvida, para simular linhas que o servidor real
+  /// mandaria malformadas.
+  List<Map<String, dynamic>> Function(
+    String table,
+    List<Map<String, dynamic>> rows,
+  )? mapResult;
 }

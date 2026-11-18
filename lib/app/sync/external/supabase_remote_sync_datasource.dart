@@ -43,6 +43,46 @@ class SupabaseRemoteSyncDataSource implements RemoteSyncDataSource {
     }
   }
 
+  @override
+  Future<List<Map<String, dynamic>>> fetchChanges(
+    String table, {
+    PullCursor? after,
+    required int limit,
+  }) async {
+    try {
+      return await _fetch(table, after, limit).timeout(timeout);
+    } catch (error) {
+      throw classifySyncError(error);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetch(
+    String table,
+    PullCursor? after,
+    int limit,
+  ) {
+    var query = _client.from(table).select();
+    if (after != null) {
+      final id = after.id;
+      if (id == null) {
+        query = query.gte('updated_at', after.updatedAt);
+      } else {
+        // Paginação por chave (keyset): depois de (updated_at, id). Com
+        // offset, uma linha alterada no meio da baixada mudaria de posição e
+        // outra seria pulada. O valor vai entre aspas porque tem `:` e `.`,
+        // que são separadores no filtro `or` do PostgREST.
+        final at = '"${after.updatedAt}"';
+        query = query.or(
+          'updated_at.gt.$at,and(updated_at.eq.$at,id.gt.$id)',
+        );
+      }
+    }
+    return query
+        .order('updated_at', ascending: true)
+        .order('id', ascending: true)
+        .limit(limit);
+  }
+
   Future<void> _send(RemoteOperation op) async {
     final table = _client.from(op.table);
     switch (op.kind) {
