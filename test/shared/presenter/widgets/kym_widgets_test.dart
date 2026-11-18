@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kym/app/theme/app_colors.dart';
 import 'package:kym/app/theme/app_theme.dart';
 import 'package:kym/shared/presenter/widgets/kym_banner.dart';
 import 'package:kym/shared/presenter/widgets/kym_brand_logo.dart';
@@ -43,8 +44,9 @@ void main() {
       expect(find.text('Entrar'), findsNothing);
     });
 
-    testWidgets('cada variante usa o botão do Material correspondente',
-        (tester) async {
+    testWidgets('cada variante usa o botão do Material correspondente', (
+      tester,
+    ) async {
       Future<void> pumpVariant(KymButtonVariant variant) {
         return tester.pumpWidget(
           _wrap(KymButton(label: 'Ação', onPressed: () {}, variant: variant)),
@@ -118,9 +120,7 @@ void main() {
 
     testWidgets('sucesso mostra o ícone de check', (tester) async {
       await tester.pumpWidget(
-        _wrap(
-          const KymBanner(message: 'Salvo.', type: KymBannerType.success),
-        ),
+        _wrap(const KymBanner(message: 'Salvo.', type: KymBannerType.success)),
       );
 
       expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
@@ -133,6 +133,21 @@ void main() {
     );
 
     expect(find.text('PREVENTIVA'), findsOneWidget);
+  });
+
+  testWidgets('KymChip neutro usa o fundo dos equipamentos', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const KymChip(label: 'Corretiva', tone: KymChipTone.neutral)),
+    );
+
+    final box = tester.widget<Container>(
+      find.ancestor(
+        of: find.text('CORRETIVA'),
+        matching: find.byType(Container),
+      ),
+    );
+    final decoration = box.decoration! as BoxDecoration;
+    expect(decoration.color, AppColors.equipmentTileBg);
   });
 
   testWidgets('KymBrandLogo mostra marca e subtítulo', (tester) async {

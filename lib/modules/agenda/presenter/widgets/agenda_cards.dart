@@ -202,14 +202,12 @@ class AgendaOrderCard extends StatelessWidget {
     final when = date == null
         ? 'Sem data'
         : AgendaDates.shortRelative(date, today);
-    final (chipLabel, chipTone) = switch (situation) {
+    final (situationLabel, situationTone) = switch (situation) {
       OrderSituation.atrasada => ('Atrasada', KymChipTone.overdue),
       OrderSituation.concluida => ('Concluída', KymChipTone.done),
-      _ =>
-        corrective
-            ? ('Corretiva', KymChipTone.overdue)
-            : ('Preventiva', KymChipTone.pending),
+      _ => ('Pendente', KymChipTone.pending),
     };
+    final typeLabel = corrective ? 'Corretiva' : 'Preventiva';
     final description = order.description?.trim();
 
     return MergeSemantics(
@@ -253,7 +251,14 @@ class AgendaOrderCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 MediaQuery.withClampedTextScaling(
                   maxScaleFactor: 1.3,
-                  child: KymChip(label: chipLabel, tone: chipTone),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      KymChip(label: typeLabel, tone: KymChipTone.neutral),
+                      const SizedBox(height: 6),
+                      KymChip(label: situationLabel, tone: situationTone),
+                    ],
+                  ),
                 ),
               ],
             ),

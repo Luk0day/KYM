@@ -167,6 +167,9 @@ void main() {
     expect(find.text('Sem data'), findsNothing);
     expect(find.text('ATRASADA'), findsOneWidget);
     expect(find.text('CONCLUÍDA'), findsOneWidget);
+    expect(find.text('PENDENTE'), findsNWidgets(2));
+    expect(find.text('CORRETIVA'), findsOneWidget);
+    expect(find.text('PREVENTIVA'), findsNWidgets(3));
 
     await _unmount(tester);
   });
