@@ -9,6 +9,8 @@ import '../modules/home/home_module.dart';
 import '../modules/home/home_routes.dart';
 import '../modules/orders/domain/repositories/order_repository.dart';
 import '../modules/orders/infra/repositories/order_repository_impl.dart';
+import '../modules/scanner/presenter/widgets/scanner_camera_builder.dart';
+import '../modules/scanner/scanner_module.dart';
 import '../modules/stores/domain/repositories/store_repository.dart';
 import '../modules/stores/infra/repositories/store_repository_impl.dart';
 import 'database/app_database.dart';
@@ -27,6 +29,7 @@ class AppModule extends Module {
     required this.authDataSourceFactory,
     AppDatabase Function()? databaseFactory,
     this.syncService,
+    this.scannerCameraBuilder,
   }) : databaseFactory = databaseFactory ?? AppDatabase.new;
 
   final AuthDataSource Function() authDataSourceFactory;
@@ -35,6 +38,9 @@ class AppModule extends Module {
   /// Processador da outbox (B19). Criado no `main` junto do banco para ser
   /// ligado logo na abertura do app; nulo no modo fake, que não sincroniza.
   final SyncService? syncService;
+
+  /// Troca a câmera do leitor de QR nos testes; em produção fica nulo.
+  final ScannerCameraBuilder? scannerCameraBuilder;
 
   @override
   void register(ModularContext c) {
@@ -65,6 +71,7 @@ class AppModule extends Module {
           authenticatedRoute: HomeRoutes.root,
         ),
       )
-      ..module(HomeModule());
+      ..module(HomeModule())
+      ..module(ScannerModule(cameraBuilder: scannerCameraBuilder));
   }
 }

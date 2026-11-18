@@ -81,6 +81,20 @@ void main() {
       },
     );
 
+    testWidgets('rótulo do botão central fica abaixo do círculo', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          KymBottomNavBar(items: _items, selectedIndex: 0, onSelected: (_) {}),
+        ),
+      );
+
+      final circle = tester.getRect(find.byType(KymProminentNavIcon));
+      final label = tester.getRect(find.text('Escanear'));
+      expect(label.top, greaterThanOrEqualTo(circle.bottom));
+    });
+
     testWidgets('sem botão central a barra não reserva espaço acima', (
       tester,
     ) async {
