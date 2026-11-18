@@ -61,6 +61,8 @@ class MaintenanceOrdersDao extends DatabaseAccessor<AppDatabase>
 
   /// Ordens com o equipamento e a loja, para a agenda. Sem as canceladas e,
   /// quando [assignedTo] vier preenchido, só as atribuídas a essa pessoa.
+  /// O innerJoin não perde ordens porque as chaves estrangeiras estão ligadas:
+  /// a sincronização (B20) precisa gravar lojas e equipamentos antes das ordens.
   Stream<List<AgendaRow>> watchAgenda({String? assignedTo}) {
     final query =
         select(maintenanceOrders).join([
