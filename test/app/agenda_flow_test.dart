@@ -8,16 +8,17 @@ import 'package:kym/app/app_module.dart';
 import 'package:kym/app/database/app_database.dart';
 import 'package:kym/app/database/seed/fake_data_seeder.dart';
 import 'package:kym/modules/agenda/presenter/pages/agenda_page.dart';
+import 'package:kym/modules/agenda/presenter/utils/agenda_clock.dart';
 import 'package:kym/modules/agenda/presenter/widgets/agenda_filters.dart';
 import 'package:kym/modules/auth/infra/datasources/fake_auth_datasource.dart';
 
 const _centro = '00000000-0000-4000-8000-0000000000a1';
 const _boaViagem = '00000000-0000-4000-8000-0000000000a2';
 
-DateTime _day(int offset) {
-  final now = DateTime.now();
-  return DateTime(now.year, now.month, now.day + offset, 9);
-}
+final _now = DateTime(2026, 11, 4, 10);
+
+DateTime _day(int offset) =>
+    DateTime(_now.year, _now.month, _now.day + offset, 9);
 
 Future<AppDatabase> _database() async {
   final db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -107,6 +108,7 @@ Future<void> _openAgenda(
       module: AppModule(
         authDataSourceFactory: () => FakeAuthDataSource(latency: Duration.zero),
         databaseFactory: () => db!,
+        agendaClock: AgendaClock(() => _now),
       ),
       child: const KymApp(),
     ),

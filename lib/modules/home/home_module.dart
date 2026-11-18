@@ -6,6 +6,7 @@ import '../agenda/domain/usecases/build_agenda.dart';
 import '../agenda/domain/usecases/watch_agenda.dart';
 import '../agenda/presenter/controllers/agenda_controller.dart';
 import '../agenda/presenter/pages/agenda_page.dart';
+import '../agenda/presenter/utils/agenda_clock.dart';
 import '../auth/auth_routes.dart';
 import '../auth/domain/entities/authenticated_user.dart';
 import '../auth/domain/entities/user_role.dart';
@@ -82,8 +83,18 @@ class HomeModule extends Module {
             guards: [_guard(AppDestination.agenda)],
             provide: (scoped) {
               scoped.addChangeNotifier<AgendaController>(
-                (WatchAgenda watch, BuildAgenda build, AgendaFilterMemory m) =>
-                    AgendaController(watch, build, m, _currentUser()),
+                (
+                  WatchAgenda watch,
+                  BuildAgenda build,
+                  AgendaFilterMemory memory,
+                  AgendaClock clock,
+                ) => AgendaController(
+                  watch,
+                  build,
+                  memory,
+                  _currentUser(),
+                  clock: clock.now,
+                ),
               );
             },
             child: (context, _) => const AgendaPage(),

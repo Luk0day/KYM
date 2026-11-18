@@ -2,6 +2,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:uuid/uuid.dart';
 
 import '../modules/agenda/agenda_module.dart';
+import '../modules/agenda/presenter/utils/agenda_clock.dart';
 import '../modules/auth/auth_module.dart';
 import '../modules/auth/infra/datasources/auth_datasource.dart';
 import '../modules/equipment/domain/repositories/equipment_repository.dart';
@@ -26,10 +27,12 @@ class AppModule extends Module {
   AppModule({
     required this.authDataSourceFactory,
     AppDatabase Function()? databaseFactory,
+    this.agendaClock = const AgendaClock(),
   }) : databaseFactory = databaseFactory ?? AppDatabase.new;
 
   final AuthDataSource Function() authDataSourceFactory;
   final AppDatabase Function() databaseFactory;
+  final AgendaClock agendaClock;
 
   @override
   void register(ModularContext c) {
@@ -57,7 +60,7 @@ class AppModule extends Module {
           authenticatedRoute: HomeRoutes.root,
         ),
       )
-      ..module(AgendaModule())
+      ..module(AgendaModule(clock: agendaClock))
       ..module(HomeModule());
   }
 }
