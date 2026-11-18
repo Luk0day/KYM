@@ -8,7 +8,10 @@ import '../auth/domain/entities/user_role_permissions.dart';
 import '../auth/presenter/controllers/session_controller.dart';
 import '../auth/presenter/guards/role_guard.dart';
 import '../auth/presenter/utils/user_role_label.dart';
+import '../equipment/presenter/controllers/equipment_list_controller.dart';
+import '../stores/presenter/controllers/store_detail_controller.dart';
 import '../stores/presenter/controllers/stores_controller.dart';
+import '../stores/presenter/pages/store_detail_page.dart';
 import '../stores/presenter/pages/stores_page.dart';
 import 'home_routes.dart';
 import 'presenter/pages/qr_scanner_placeholder_page.dart';
@@ -50,6 +53,29 @@ class HomeModule extends Module {
         child: (context, _) =>
             QrScannerPlaceholderPage(onBack: () => context.pop()),
       )
+      // Detalhe da loja (B26): por cima da casca, com voltar.
+      ..route(
+        HomeRoutes.lojaPath,
+        guards: [_guard(AppDestination.lojas)],
+        provide: (scoped) {
+          scoped
+            ..addChangeNotifier<StoreDetailController>(
+              StoreDetailController.new,
+            )
+            ..addChangeNotifier<EquipmentListController>(
+              EquipmentListController.new,
+            );
+        },
+        child: (context, state) => StoreDetailPage(
+          storeId: state.params['id']!,
+          controller: context.read<StoreDetailController>(),
+          equipmentController: context.read<EquipmentListController>(),
+          canCheckIn: _currentRole()?.canCheckIn ?? false,
+          onBack: () => context.pop(),
+          // TODO(B28): abrir o detalhe do equipamento.
+          onEquipmentSelected: (_) {},
+        ),
+      )
       ..route(
         '/',
         guards: [_shellGuard],
@@ -76,8 +102,8 @@ class HomeModule extends Module {
             },
             child: (context, _) => StoresPage(
               controller: context.read<StoresController>(),
-              // TODO(B26): abrir os detalhes da loja.
-              onStoreSelected: (_) {},
+              onStoreSelected: (store) =>
+                  context.pushNamed(HomeRoutes.loja(store.id)),
             ),
           )
           ..route(
