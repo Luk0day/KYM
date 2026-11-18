@@ -1,18 +1,17 @@
 import '../auth/domain/entities/user_role_permissions.dart';
+import '../scanner/scanner_routes.dart';
 
 abstract final class HomeRoutes {
   static const String root = '/home';
 
   static const String painelPath = '/painel';
   static const String lojasPath = '/lojas';
-  static const String qrPath = '/qr';
   static const String agendaPath = '/agenda';
   static const String qrCodesPath = '/qr-codes';
   static const String perfilPath = '/perfil';
 
   static const String painel = '$root$painelPath';
   static const String lojas = '$root$lojasPath';
-  static const String qr = '$root$qrPath';
   static const String agenda = '$root$agendaPath';
   static const String qrCodes = '$root$qrCodesPath';
   static const String perfil = '$root$perfilPath';
@@ -20,7 +19,8 @@ abstract final class HomeRoutes {
   static String of(AppDestination destination) => switch (destination) {
     AppDestination.painel => painel,
     AppDestination.lojas => lojas,
-    AppDestination.qr => qr,
+    // O leitor abre em tela cheia, fora do shell.
+    AppDestination.qr => ScannerRoutes.root,
     AppDestination.agenda => agenda,
     AppDestination.qrCodes => qrCodes,
     AppDestination.perfil => perfil,

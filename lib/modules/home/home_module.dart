@@ -9,7 +9,6 @@ import '../auth/presenter/controllers/session_controller.dart';
 import '../auth/presenter/guards/role_guard.dart';
 import '../auth/presenter/utils/user_role_label.dart';
 import 'home_routes.dart';
-import 'presenter/pages/qr_scanner_placeholder_page.dart';
 import 'presenter/pages/shell_page.dart';
 import 'presenter/pages/tab_placeholder_page.dart';
 
@@ -41,67 +40,60 @@ class HomeModule extends Module {
 
   @override
   void register(ModularContext c) {
-    c
-      ..route(
-        HomeRoutes.qrPath,
-        guards: [_guard(AppDestination.qr)],
-        child: (context, _) =>
-            QrScannerPlaceholderPage(onBack: () => context.pop()),
-      )
-      ..route(
-        '/',
-        guards: [_shellGuard],
-        child: (context, _) => ShellPage(session: inject<SessionController>()),
-        children: (c) => c
-          ..route(
-            HomeRoutes.painelPath,
-            guards: [_guard(AppDestination.painel)],
-            child: (context, _) {
-              final user = inject<SessionController>().user;
-              final name = user?.displayName ?? user?.email ?? '';
-              return TabPlaceholderPage(
-                title: 'Olá, ${name.split(' ').first}',
-                subtitle: user?.role.label,
-              );
-            },
-          )
-          ..route(
-            HomeRoutes.lojasPath,
-            guards: [_guard(AppDestination.lojas)],
-            child: (context, _) => const TabPlaceholderPage(title: 'Lojas'),
-          )
-          ..route(
-            HomeRoutes.agendaPath,
-            guards: [_guard(AppDestination.agenda)],
-            child: (context, _) => const TabPlaceholderPage(title: 'Agenda'),
-          )
-          ..route(
-            HomeRoutes.qrCodesPath,
-            guards: [_guard(AppDestination.qrCodes)],
-            child: (context, _) => const TabPlaceholderPage(
-              title: 'QR Codes',
-              subtitle: 'Gere e imprima as etiquetas para campo',
-            ),
-          )
-          ..route(
-            HomeRoutes.perfilPath,
-            guards: [_guard(AppDestination.perfil)],
-            child: (context, _) => TabPlaceholderPage(
-              title: 'Perfil',
-              subtitle: 'Configurações operacionais e conta',
-              children: [
-                KymButton(
-                  label: 'Sair da conta',
-                  variant: KymButtonVariant.soft,
-                  leading: const Icon(Icons.logout_rounded, size: 20),
-                  onPressed: () async {
-                    await inject<SessionController>().signOut();
-                    if (context.mounted) context.navigate(AuthRoutes.login);
-                  },
-                ),
-              ],
-            ),
+    c.route(
+      '/',
+      guards: [_shellGuard],
+      child: (context, _) => ShellPage(session: inject<SessionController>()),
+      children: (c) => c
+        ..route(
+          HomeRoutes.painelPath,
+          guards: [_guard(AppDestination.painel)],
+          child: (context, _) {
+            final user = inject<SessionController>().user;
+            final name = user?.displayName ?? user?.email ?? '';
+            return TabPlaceholderPage(
+              title: 'Olá, ${name.split(' ').first}',
+              subtitle: user?.role.label,
+            );
+          },
+        )
+        ..route(
+          HomeRoutes.lojasPath,
+          guards: [_guard(AppDestination.lojas)],
+          child: (context, _) => const TabPlaceholderPage(title: 'Lojas'),
+        )
+        ..route(
+          HomeRoutes.agendaPath,
+          guards: [_guard(AppDestination.agenda)],
+          child: (context, _) => const TabPlaceholderPage(title: 'Agenda'),
+        )
+        ..route(
+          HomeRoutes.qrCodesPath,
+          guards: [_guard(AppDestination.qrCodes)],
+          child: (context, _) => const TabPlaceholderPage(
+            title: 'QR Codes',
+            subtitle: 'Gere e imprima as etiquetas para campo',
           ),
-      );
+        )
+        ..route(
+          HomeRoutes.perfilPath,
+          guards: [_guard(AppDestination.perfil)],
+          child: (context, _) => TabPlaceholderPage(
+            title: 'Perfil',
+            subtitle: 'Configurações operacionais e conta',
+            children: [
+              KymButton(
+                label: 'Sair da conta',
+                variant: KymButtonVariant.soft,
+                leading: const Icon(Icons.logout_rounded, size: 20),
+                onPressed: () async {
+                  await inject<SessionController>().signOut();
+                  if (context.mounted) context.navigate(AuthRoutes.login);
+                },
+              ),
+            ],
+          ),
+        ),
+    );
   }
 }
