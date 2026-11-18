@@ -12,12 +12,15 @@ import '../../domain/usecases/watch_agenda.dart';
 
 enum AgendaStatus { loading, ready, error }
 
+typedef SavedAgendaFilter = ({AgendaFilter filter, DateTime savedOn});
+
 class AgendaFilterMemory {
-  final Map<String, AgendaFilter> _byUser = {};
+  final Map<String, SavedAgendaFilter> _byUser = {};
 
-  AgendaFilter? read(String userId) => _byUser[userId];
+  SavedAgendaFilter? read(String userId) => _byUser[userId];
 
-  void write(String userId, AgendaFilter filter) => _byUser[userId] = filter;
+  void write(String userId, AgendaFilter filter, DateTime savedOn) =>
+      _byUser[userId] = (filter: filter, savedOn: dateOnly(savedOn));
 }
 
 class AgendaController extends ChangeNotifier {
@@ -28,7 +31,9 @@ class AgendaController extends ChangeNotifier {
     this.user, {
     this._clock = DateTime.now,
   }) {
-    _filter = _memory.read(user.id) ?? AgendaFilter(start: today);
+    final saved = _memory.read(user.id);
+    _filter = saved?.filter ?? AgendaFilter(start: today);
+    _filterDay = saved?.savedOn ?? today;
   }
 
   static const int stripDaysBefore = 7;
@@ -41,17 +46,26 @@ class AgendaController extends ChangeNotifier {
   final DateTime Function() _clock;
 
   late AgendaFilter _filter;
+  late DateTime _filterDay;
   StreamSubscription<List<AgendaItem>>? _subscription;
   List<AgendaItem> _items = const [];
   AgendaStatus _status = AgendaStatus.loading;
   bool _disposed = false;
 
-  AgendaFilter get filter => _filter;
+  AgendaFilter get filter {
+    final today = this.today;
+    if (_filterDay != today) {
+      _filter = _carriedTo(_filter, today);
+      _filterDay = today;
+    }
+    return _filter;
+  }
+
   AgendaStatus get status => _status;
   DateTime get today => dateOnly(_clock());
 
   List<AgendaSection> get sections =>
-      _buildAgenda(items: _items, filter: _filter, today: _clock());
+      _buildAgenda(items: _items, filter: filter, today: _clock());
 
   AgendaSummary get summary =>
       _buildAgenda.summary(items: _items, today: _clock());
@@ -59,7 +73,7 @@ class AgendaController extends ChangeNotifier {
   /// Dias da faixa do topo: a semana anterior, a atual e as seguintes, a
   /// partir de uma segunda-feira, sempre incluindo o dia selecionado.
   List<DateTime> get stripDays {
-    final anchor = _filter.start.isBefore(today) ? _filter.start : today;
+    final anchor = filter.start.isBefore(today) ? filter.start : today;
     final monday = anchor.subtract(Duration(days: anchor.weekday - 1));
     final first = DateTime(
       monday.year,
@@ -93,22 +107,22 @@ class AgendaController extends ChangeNotifier {
   }
 
   void selectSituation(AgendaSituationFilter situation) =>
-      _update(_filter.copyWith(situation: situation));
+      _update(filter.copyWith(situation: situation));
 
   void selectPeriod(AgendaPeriod period) {
     if (period == AgendaPeriod.personalizado) return;
     _update(
       AgendaFilter(
-        situation: _filter.situation,
+        situation: filter.situation,
         period: period,
-        start: period == AgendaPeriod.hoje ? today : _filter.start,
+        start: period == AgendaPeriod.hoje ? today : filter.start,
       ),
     );
   }
 
   void selectRange(DateTime start, DateTime end) => _update(
     AgendaFilter(
-      situation: _filter.situation,
+      situation: filter.situation,
       period: AgendaPeriod.personalizado,
       start: start,
       customEnd: end,
@@ -116,17 +130,30 @@ class AgendaController extends ChangeNotifier {
   );
 
   void selectDay(DateTime day) {
-    final period = _filter.period == AgendaPeriod.personalizado
+    final period = filter.period == AgendaPeriod.personalizado
         ? AgendaPeriod.seteDias
-        : _filter.period;
+        : filter.period;
     _update(
-      AgendaFilter(situation: _filter.situation, period: period, start: day),
+      AgendaFilter(situation: filter.situation, period: period, start: day),
     );
+  }
+
+  /// Leva um filtro de outro dia para [today]: se o início ficou no passado,
+  /// ele vira hoje, mantendo a situação e o período. Um Personalizado que já
+  /// terminou volta para o padrão.
+  static AgendaFilter _carriedTo(AgendaFilter filter, DateTime today) {
+    if (!filter.start.isBefore(today)) return filter;
+    if (filter.period == AgendaPeriod.personalizado &&
+        filter.end.isBefore(today)) {
+      return AgendaFilter(situation: filter.situation, start: today);
+    }
+    return filter.copyWith(start: today);
   }
 
   void _update(AgendaFilter filter) {
     _filter = filter;
-    _memory.write(user.id, filter);
+    _filterDay = today;
+    _memory.write(user.id, filter, _filterDay);
     _notify();
   }
 

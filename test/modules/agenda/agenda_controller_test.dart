@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 class _MockOrderRepository extends Mock implements OrderRepository {}
 
 final _now = DateTime(2026, 11, 15, 10);
+var _clock = _now;
 
 const _tecnico = AuthenticatedUser(
   id: 'tec',
@@ -49,10 +50,11 @@ void main() {
         BuildAgenda(),
         memory,
         user,
-        clock: () => _now,
+        clock: () => _clock,
       );
 
   setUp(() {
+    _clock = _now;
     repository = _MockOrderRepository();
     items = StreamController<List<AgendaItem>>.broadcast();
     memory = AgendaFilterMemory();
@@ -127,6 +129,68 @@ void main() {
     final next = create();
 
     expect(next.filter.situation, AgendaSituationFilter.atrasadas);
+  });
+
+  group('filtro lembrado de outro dia', () {
+    test('início no passado vira hoje, com situação e período', () {
+      create()
+        ..selectSituation(AgendaSituationFilter.pendentes)
+        ..selectPeriod(AgendaPeriod.trintaDias);
+
+      _clock = DateTime(2026, 11, 16, 7);
+      final next = create();
+
+      expect(next.filter.start, DateTime(2026, 11, 16));
+      expect(next.filter.period, AgendaPeriod.trintaDias);
+      expect(next.filter.situation, AgendaSituationFilter.pendentes);
+    });
+
+    test('início no futuro continua igual', () {
+      create().selectDay(DateTime(2026, 11, 20));
+
+      _clock = DateTime(2026, 11, 16, 7);
+
+      expect(create().filter.start, DateTime(2026, 11, 20));
+    });
+
+    test('Personalizado em andamento mantém o fim', () {
+      create().selectRange(DateTime(2026, 11, 14), DateTime(2026, 11, 22));
+
+      _clock = DateTime(2026, 11, 16, 7);
+      final filter = create().filter;
+
+      expect(filter.period, AgendaPeriod.personalizado);
+      expect(filter.start, DateTime(2026, 11, 16));
+      expect(filter.end, DateTime(2026, 11, 22));
+    });
+
+    test('Personalizado que já terminou volta para o padrão', () {
+      create()
+        ..selectSituation(AgendaSituationFilter.concluidas)
+        ..selectRange(DateTime(2026, 11, 10), DateTime(2026, 11, 15));
+
+      _clock = DateTime(2026, 11, 16, 7);
+      final filter = create().filter;
+
+      expect(filter.period, AgendaPeriod.seteDias);
+      expect(filter.start, DateTime(2026, 11, 16));
+      expect(filter.situation, AgendaSituationFilter.concluidas);
+    });
+
+    test('app aberto de um dia para o outro passa para o dia novo', () {
+      final controller = create();
+
+      _clock = DateTime(2026, 11, 16, 0, 5);
+
+      expect(controller.filter.start, DateTime(2026, 11, 16));
+      expect(controller.filter.period, AgendaPeriod.seteDias);
+    });
+
+    test('dia passado escolhido hoje continua ao voltar para a aba', () {
+      create().selectDay(DateTime(2026, 11, 12));
+
+      expect(create().filter.start, DateTime(2026, 11, 12));
+    });
   });
 
   test('selecionar período mantém a situação e o dia', () {
