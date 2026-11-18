@@ -1,4 +1,5 @@
 import '../../domain/entities/authenticated_user.dart';
+import '../../domain/entities/password_recovery_event.dart';
 import '../../domain/entities/user_role.dart';
 import '../../domain/errors/auth_failure.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -50,6 +51,15 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> sendPasswordResetEmail({required String email}) {
     return _dataSource.sendPasswordResetEmail(email: email);
   }
+
+  @override
+  Future<void> updatePassword({required String password}) {
+    return _dataSource.updatePassword(password: password);
+  }
+
+  @override
+  Stream<PasswordRecoveryEvent> get passwordRecoveryEvents =>
+      _dataSource.passwordRecoveryEvents;
 
   AuthenticatedUser _toEntity(AuthUserModel model) {
     final id = model.id.trim();

@@ -1,4 +1,5 @@
 import '../entities/authenticated_user.dart';
+import '../entities/password_recovery_event.dart';
 
 abstract interface class AuthRepository {
   /// Retorna o usuário autenticado com um perfil válido no KYM.
@@ -21,4 +22,13 @@ abstract interface class AuthRepository {
   Future<void> signOut();
 
   Future<void> sendPasswordResetEmail({required String email});
+
+  /// Troca a senha de quem está na sessão de recuperação aberta pelo link do
+  /// e-mail. Lança [AuthFailure] com weakPassword, samePassword ou
+  /// recoveryLinkInvalid (sessão expirada ou ausente).
+  Future<void> updatePassword({required String password});
+
+  /// Emite started quando o link do e-mail abre a sessão de recuperação e
+  /// linkInvalid quando o link chega expirado ou já usado.
+  Stream<PasswordRecoveryEvent> get passwordRecoveryEvents;
 }

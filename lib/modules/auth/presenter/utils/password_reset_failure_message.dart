@@ -14,6 +14,9 @@ extension PasswordResetFailureMessage on AuthFailureType {
       case AuthFailureType.invalidProfile:
       case AuthFailureType.cancelled:
       case AuthFailureType.accessDenied:
+      case AuthFailureType.weakPassword:
+      case AuthFailureType.samePassword:
+      case AuthFailureType.recoveryLinkInvalid:
       case AuthFailureType.unexpected:
         return 'Não foi possível enviar o e-mail de recuperação. '
             'Tente novamente em instantes.';
