@@ -260,7 +260,7 @@ void main() {
     expect(days, contains(DateTime(2026, 11, 15)));
   });
 
-  test('resumo conta as vistorias de hoje', () async {
+  test('resumo conta as visitas de hoje', () async {
     final controller = create()..start();
 
     items.add([

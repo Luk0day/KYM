@@ -176,17 +176,17 @@ void main() {
     await _unmount(tester);
   });
 
-  testWidgets('saudação mostra as vistorias de hoje e o progresso', (
+  testWidgets('saudação mostra as visitas de hoje e o progresso', (
     tester,
   ) async {
     final handle = tester.ensureSemantics();
     await _openAgenda(tester);
 
     expect(find.text('Olá, Técnico Teste'), findsOneWidget);
-    expect(find.text('2 vistorias programadas hoje'), findsOneWidget);
+    expect(find.text('2 visitas programadas hoje'), findsOneWidget);
     expect(find.text('1/2'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('1 de 2 vistorias de hoje concluídas'),
+      find.bySemanticsLabel('1 de 2 visitas de hoje concluídas'),
       findsOneWidget,
     );
 

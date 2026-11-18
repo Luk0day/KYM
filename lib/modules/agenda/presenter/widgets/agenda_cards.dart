@@ -74,8 +74,8 @@ class AgendaGreetingCard extends StatelessWidget {
     final total = summary.scheduledToday;
     final done = summary.doneToday;
     final visits = total == 1
-        ? '1 vistoria programada hoje'
-        : '$total vistorias programadas hoje';
+        ? '1 visita programada hoje'
+        : '$total visitas programadas hoje';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -101,7 +101,7 @@ class AgendaGreetingCard extends StatelessWidget {
           if (total > 0)
             Semantics(
               container: true,
-              label: '$done de $total vistorias de hoje concluídas',
+              label: '$done de $total visitas de hoje concluídas',
               excludeSemantics: true,
               child: SizedBox(
                 width: 40,
