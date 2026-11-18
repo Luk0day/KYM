@@ -17,6 +17,7 @@ import 'database/daos/maintenance_orders_dao.dart';
 import 'database/daos/outbox_dao.dart';
 import 'database/daos/photos_dao.dart';
 import 'database/daos/stores_dao.dart';
+import 'sync/sync_service.dart';
 
 /// As fábricas são injetadas para que testes e o modo fake troquem o Supabase
 /// e o banco (por exemplo `AppDatabase.forTesting(NativeDatabase.memory())`)
@@ -25,13 +26,21 @@ class AppModule extends Module {
   AppModule({
     required this.authDataSourceFactory,
     AppDatabase Function()? databaseFactory,
+    this.syncService,
   }) : databaseFactory = databaseFactory ?? AppDatabase.new;
 
   final AuthDataSource Function() authDataSourceFactory;
   final AppDatabase Function() databaseFactory;
 
+  /// Processador da outbox (B19). Criado no `main` junto do banco para ser
+  /// ligado logo na abertura do app; nulo no modo fake, que não sincroniza.
+  final SyncService? syncService;
+
   @override
   void register(ModularContext c) {
+    final sync = syncService;
+    if (sync != null) c.addInstance<SyncService>(sync);
+
     c
       // Banco local: um só para o app todo. Lazy, então só abre quando alguém
       // pedir.
