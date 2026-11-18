@@ -10,6 +10,7 @@ abstract final class AppColors {
 
   static const Color primary = Color(0xFF5B5BD6);
   static const Color accent = Color(0xFFF2664D);
+  static const Color onPrimary = Color(0xFFFFFFFF);
 
   static const Color pendingBg = Color(0xFFDBEAFB);
   static const Color pendingFg = primary;

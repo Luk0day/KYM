@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../app/theme/app_theme.dart';
 import '../../../orders/domain/entities/order_situation.dart';
 import '../utils/agenda_dates.dart';
 
@@ -96,7 +97,7 @@ class _DayBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? Colors.white : AppColors.textPrimary;
+    final foreground = selected ? AppColors.onPrimary : AppColors.textPrimary;
     final label =
         '${AgendaDates.weekday(day)}, ${AgendaDates.dayMonth(day)}'
         '${isToday ? ', hoje' : ''}';
@@ -110,14 +111,14 @@ class _DayBox extends StatelessWidget {
       child: Material(
         color: selected ? AppColors.primary : AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
           side: BorderSide(
             color: selected ? AppColors.primary : AppColors.border,
           ),
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
           child: SizedBox(
             width: AgendaDayStrip._itemWidth,
             child: MediaQuery.withClampedTextScaling(
@@ -127,9 +128,10 @@ class _DayBox extends StatelessWidget {
                 children: [
                   Text(
                     AgendaDates.weekdayShort(day),
-                    style: AppTextStyles.metadata.copyWith(
-                      color: selected ? Colors.white : AppColors.textSecondary,
-                      fontSize: 12,
+                    style: AppTextStyles.caption.copyWith(
+                      color: selected
+                          ? AppColors.onPrimary
+                          : AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -145,7 +147,7 @@ class _DayBox extends StatelessWidget {
                       width: 4,
                       height: 4,
                       decoration: const BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.onPrimary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -248,7 +250,9 @@ class _AgendaChip extends StatelessWidget {
                 child: Text(
                   label.toUpperCase(),
                   style: AppTextStyles.label.copyWith(
-                    color: selected ? Colors.white : AppColors.textSecondary,
+                    color: selected
+                        ? AppColors.onPrimary
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),

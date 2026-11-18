@@ -40,6 +40,13 @@ abstract final class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
+  static const TextStyle caption = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondary,
+  );
+
   static const TextStyle fieldLabel = TextStyle(
     fontFamily: fontFamily,
     fontSize: 13,

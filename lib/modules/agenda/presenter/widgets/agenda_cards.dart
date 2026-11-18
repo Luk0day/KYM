@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/presenter/widgets/kym_chip.dart';
 import '../../../orders/domain/entities/agenda_item.dart';
 import '../../../orders/domain/entities/maintenance_order.dart';
@@ -40,7 +41,7 @@ class AgendaInitialsTile extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: warm ? AppColors.overdueBg : AppColors.equipmentTileBg,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
           ),
           child: Center(
             child: MediaQuery.withNoTextScaling(
@@ -80,7 +81,7 @@ class AgendaGreetingCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -216,7 +217,7 @@ class AgendaOrderCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: AppColors.border),
         ),
         child: Column(

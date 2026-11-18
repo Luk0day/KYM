@@ -6,6 +6,7 @@ import 'app_text_styles.dart';
 
 abstract final class AppTheme {
   static const double radius = 14;
+  static const double radiusSmall = 12;
   static const double buttonHeight = 48;
   static const double fieldHeight = 52;
 
@@ -95,20 +96,23 @@ abstract final class AppTheme {
 
   static final InputDecorationTheme _inputDecorationTheme =
       InputDecorationTheme(
-    filled: true,
-    fillColor: AppColors.surface,
-    constraints: const BoxConstraints(minHeight: fieldHeight),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-    hintStyle: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-    errorStyle: AppTextStyles.metadata.copyWith(color: AppColors.accent),
-    suffixIconColor: AppColors.textSecondary,
-    border: _fieldBorder(AppColors.border),
-    enabledBorder: _fieldBorder(AppColors.border),
-    disabledBorder: _fieldBorder(AppColors.border),
-    focusedBorder: _fieldBorder(AppColors.primary, 1.5),
-    errorBorder: _fieldBorder(AppColors.accent),
-    focusedErrorBorder: _fieldBorder(AppColors.accent, 1.5),
-  );
+        filled: true,
+        fillColor: AppColors.surface,
+        constraints: const BoxConstraints(minHeight: fieldHeight),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 16,
+        ),
+        hintStyle: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+        errorStyle: AppTextStyles.metadata.copyWith(color: AppColors.accent),
+        suffixIconColor: AppColors.textSecondary,
+        border: _fieldBorder(AppColors.border),
+        enabledBorder: _fieldBorder(AppColors.border),
+        disabledBorder: _fieldBorder(AppColors.border),
+        focusedBorder: _fieldBorder(AppColors.primary, 1.5),
+        errorBorder: _fieldBorder(AppColors.accent),
+        focusedErrorBorder: _fieldBorder(AppColors.accent, 1.5),
+      );
 
   static final FilledButtonThemeData _filledButtonTheme = FilledButtonThemeData(
     style: FilledButton.styleFrom(
@@ -125,15 +129,15 @@ abstract final class AppTheme {
 
   static final OutlinedButtonThemeData _outlinedButtonTheme =
       OutlinedButtonThemeData(
-    style: OutlinedButton.styleFrom(
-      backgroundColor: AppColors.surface,
-      foregroundColor: AppColors.primary,
-      minimumSize: const Size.fromHeight(buttonHeight),
-      side: const BorderSide(color: AppColors.primary),
-      shape: _buttonShape,
-      textStyle: AppTextStyles.buttonSecondary,
-    ),
-  );
+        style: OutlinedButton.styleFrom(
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.primary,
+          minimumSize: const Size.fromHeight(buttonHeight),
+          side: const BorderSide(color: AppColors.primary),
+          shape: _buttonShape,
+          textStyle: AppTextStyles.buttonSecondary,
+        ),
+      );
 
   static final TextButtonThemeData _textButtonTheme = TextButtonThemeData(
     style: TextButton.styleFrom(
