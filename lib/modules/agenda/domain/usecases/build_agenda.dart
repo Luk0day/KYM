@@ -1,18 +1,17 @@
-import '../../../auth/domain/entities/user_role.dart';
 import '../../../orders/domain/entities/agenda_item.dart';
 import '../../../orders/domain/entities/order_situation.dart';
 import '../entities/agenda_filter.dart';
 import '../entities/agenda_section.dart';
 
 class BuildAgenda {
-  /// Monta as seções da agenda na ordem: Sem data (só gestor), Em atraso e
-  /// um grupo por dia dentro do período. As atrasadas ficam sempre em Em
-  /// atraso, fora do período, porque são o que ficou para trás.
+  /// Monta as seções da agenda na ordem: Sem data, Em atraso e um grupo por
+  /// dia dentro do período. As atrasadas ficam sempre em Em atraso, fora do
+  /// período, porque são o que ficou para trás. Quem filtra o que cada papel
+  /// vê é o [WatchAgenda]: o técnico só recebe as ordens atribuídas a ele.
   List<AgendaSection> call({
     required List<AgendaItem> items,
     required AgendaFilter filter,
     required DateTime today,
-    required UserRole role,
   }) {
     final situation = filter.situation;
     final showPending =
@@ -41,7 +40,7 @@ class BuildAgenda {
         case OrderSituation.pendente:
           if (!showPending) continue;
           if (date == null) {
-            if (role == UserRole.gestor) noDate.add(item);
+            noDate.add(item);
           } else if (filter.contains(date)) {
             byDay.putIfAbsent(dateOnly(date), () => []).add(item);
           }

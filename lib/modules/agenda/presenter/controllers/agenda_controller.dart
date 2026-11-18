@@ -50,12 +50,8 @@ class AgendaController extends ChangeNotifier {
   AgendaStatus get status => _status;
   DateTime get today => dateOnly(_clock());
 
-  List<AgendaSection> get sections => _buildAgenda(
-    items: _items,
-    filter: _filter,
-    today: _clock(),
-    role: user.role,
-  );
+  List<AgendaSection> get sections =>
+      _buildAgenda(items: _items, filter: _filter, today: _clock());
 
   AgendaSummary get summary =>
       _buildAgenda.summary(items: _items, today: _clock());

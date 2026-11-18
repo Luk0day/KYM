@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kym/modules/agenda/domain/entities/agenda_filter.dart';
 import 'package:kym/modules/agenda/domain/entities/agenda_section.dart';
 import 'package:kym/modules/agenda/domain/usecases/build_agenda.dart';
-import 'package:kym/modules/auth/domain/entities/user_role.dart';
 import 'package:kym/modules/orders/domain/entities/agenda_item.dart';
 import 'package:kym/modules/orders/domain/entities/maintenance_order.dart';
 import 'package:kym/modules/orders/domain/entities/order_situation.dart';
@@ -152,38 +151,49 @@ void main() {
     List<AgendaSection> sections({
       AgendaSituationFilter situation = AgendaSituationFilter.todas,
       AgendaPeriod period = AgendaPeriod.seteDias,
-      UserRole role = UserRole.tecnico,
     }) => build(
       items: items,
       filter: AgendaFilter(start: _today, situation: situation, period: period),
       today: _today,
-      role: role,
     );
 
     List<String> names(AgendaSection section) =>
         section.items.map((i) => i.equipmentName).toList();
 
-    test('técnico: Em atraso e um grupo por dia, sem canceladas', () {
+    test('Sem data, Em atraso e um grupo por dia, sem canceladas', () {
       final result = sections();
 
       expect(result.map((s) => s.kind), [
+        AgendaSectionKind.semData,
         AgendaSectionKind.emAtraso,
         AgendaSectionKind.dia,
         AgendaSectionKind.dia,
         AgendaSectionKind.dia,
       ]);
-      expect(names(result[0]), ['Freezer']);
-      expect(result[1].day, DateTime(2026, 11, 4));
-      expect(names(result[1]), ['Ar-condicionado', 'Balcão']);
-      expect(names(result[2]), ['Câmara fria']);
-      expect(names(result[3]), ['Iluminação']);
+      expect(names(result[0]), ['Chamado']);
+      expect(names(result[1]), ['Freezer']);
+      expect(result[2].day, DateTime(2026, 11, 4));
+      expect(names(result[2]), ['Ar-condicionado', 'Balcão']);
+      expect(names(result[3]), ['Câmara fria']);
+      expect(names(result[4]), ['Iluminação']);
     });
 
-    test('gestor vê o grupo Sem data no topo', () {
-      final result = sections(role: UserRole.gestor);
+    test('Sem data some com os filtros de atrasadas e concluídas', () {
+      bool hasNoDate(List<AgendaSection> s) =>
+          s.any((section) => section.kind == AgendaSectionKind.semData);
 
-      expect(result.first.kind, AgendaSectionKind.semData);
-      expect(names(result.first), ['Chamado']);
+      expect(
+        hasNoDate(sections(situation: AgendaSituationFilter.pendentes)),
+        isTrue,
+      );
+      expect(
+        hasNoDate(sections(situation: AgendaSituationFilter.atrasadas)),
+        isFalse,
+      );
+      expect(
+        hasNoDate(sections(situation: AgendaSituationFilter.concluidas)),
+        isFalse,
+      );
     });
 
     test('ordens fora do período não aparecem nos dias', () {
@@ -199,8 +209,11 @@ void main() {
     test('atrasadas aparecem mesmo com o período em hoje', () {
       final result = sections(period: AgendaPeriod.hoje);
 
-      expect(result.first.kind, AgendaSectionKind.emAtraso);
-      expect(result.length, 2);
+      expect(result.map((s) => s.kind), [
+        AgendaSectionKind.semData,
+        AgendaSectionKind.emAtraso,
+        AgendaSectionKind.dia,
+      ]);
     });
 
     test('filtro pendentes tira atrasadas e concluídas', () {
@@ -229,7 +242,6 @@ void main() {
           items: const [],
           filter: AgendaFilter(start: _today),
           today: _today,
-          role: UserRole.gestor,
         ),
         isEmpty,
       );
