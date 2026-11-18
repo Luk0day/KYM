@@ -320,17 +320,6 @@ void main() {
     await _unmount(tester);
   });
 
-  testWidgets('avatar do topo abre o Perfil', (tester) async {
-    await _openAgenda(tester);
-
-    await tester.tap(find.byTooltip('Abrir perfil'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Sair da conta'), findsOneWidget);
-
-    await _unmount(tester);
-  });
-
   testWidgets('celular pequeno com fonte em 200% não quebra', (tester) async {
     tester.platformDispatcher.textScaleFactorTestValue = 2.0;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);

@@ -86,9 +86,7 @@ class HomeModule extends Module {
                     AgendaController(watch, build, m, _currentUser()),
               );
             },
-            child: (context, _) => AgendaPage(
-              onOpenProfile: () => context.navigate(HomeRoutes.perfil),
-            ),
+            child: (context, _) => const AgendaPage(),
           )
           ..route(
             HomeRoutes.qrCodesPath,

@@ -11,9 +11,7 @@ import '../widgets/agenda_cards.dart';
 import '../widgets/agenda_filters.dart';
 
 class AgendaPage extends StatefulWidget {
-  const AgendaPage({super.key, required this.onOpenProfile});
-
-  final VoidCallback onOpenProfile;
+  const AgendaPage({super.key});
 
   @override
   State<AgendaPage> createState() => _AgendaPageState();
@@ -67,12 +65,7 @@ class _AgendaPageState extends State<AgendaPage> {
           listenable: _controller,
           builder: (context, _) => ListView(
             padding: const EdgeInsets.only(bottom: 24),
-            children: [
-              _Header(onOpenProfile: widget.onOpenProfile),
-              const Divider(),
-              ..._buildTop(),
-              ..._buildBody(),
-            ],
+            children: [..._buildTop(), ..._buildBody()],
           ),
         ),
       ),
@@ -200,56 +193,6 @@ class _AgendaPageState extends State<AgendaPage> {
     AgendaSituationFilter.atrasadas => 'Nenhuma visita atrasada. Tudo em dia!',
     AgendaSituationFilter.concluidas => 'Nenhuma visita concluída no período.',
   };
-}
-
-class _Header extends StatelessWidget {
-  const _Header({required this.onOpenProfile});
-
-  final VoidCallback onOpenProfile;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 8, 4),
-      child: Row(
-        children: [
-          Flexible(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'KYM',
-                    style: AppTextStyles.screenTitle.copyWith(
-                      color: AppColors.primary,
-                      fontSize: 20,
-                    ),
-                  ),
-                  TextSpan(
-                    text: '  •  Agenda',
-                    style: AppTextStyles.cardTitle.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const Spacer(),
-          IconButton(
-            tooltip: 'Abrir perfil',
-            onPressed: onOpenProfile,
-            icon: const CircleAvatar(
-              radius: 14,
-              backgroundColor: AppColors.primary,
-              child: Icon(Icons.person_outline, size: 18, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _Message extends StatelessWidget {
