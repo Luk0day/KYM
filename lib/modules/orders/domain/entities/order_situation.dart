@@ -2,8 +2,10 @@ import 'maintenance_order.dart';
 
 enum OrderSituation { pendente, atrasada, concluida, cancelada }
 
-DateTime dateOnly(DateTime value) =>
-    DateTime(value.year, value.month, value.day);
+DateTime dateOnly(DateTime value) {
+  final local = value.toLocal();
+  return DateTime(local.year, local.month, local.day);
+}
 
 extension MaintenanceOrderSituation on MaintenanceOrder {
   /// Regra única de situação, usada pela agenda, pelo painel (B45) e pelas

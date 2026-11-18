@@ -72,6 +72,14 @@ void main() {
       );
     });
 
+    test('dateOnly usa o dia no horário local, mesmo vindo em UTC', () {
+      final utc = DateTime.utc(2026, 11, 4, 23, 30);
+      final local = utc.toLocal();
+
+      expect(dateOnly(utc), DateTime(local.year, local.month, local.day));
+      expect(dateOnly(utc).isUtc, isFalse);
+    });
+
     test('cancelada é cancelada', () {
       expect(
         situation(_day(1), status: OrderStatus.cancelada),
