@@ -101,7 +101,7 @@ class AgendaController extends ChangeNotifier {
       AgendaFilter(
         situation: _filter.situation,
         period: period,
-        start: _filter.start,
+        start: period == AgendaPeriod.hoje ? today : _filter.start,
       ),
     );
   }
@@ -117,7 +117,7 @@ class AgendaController extends ChangeNotifier {
 
   void selectDay(DateTime day) {
     final period = _filter.period == AgendaPeriod.personalizado
-        ? AgendaPeriod.hoje
+        ? AgendaPeriod.seteDias
         : _filter.period;
     _update(
       AgendaFilter(situation: _filter.situation, period: period, start: day),

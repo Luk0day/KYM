@@ -152,13 +152,39 @@ void main() {
     expect(controller.filter.end, DateTime(2026, 11, 28));
   });
 
-  test('tocar num dia com período personalizado volta para Hoje', () {
+  test('Hoje volta o início para hoje', () {
+    final controller = create()
+      ..selectDay(DateTime(2026, 11, 20))
+      ..selectPeriod(AgendaPeriod.hoje);
+
+    expect(controller.filter.period, AgendaPeriod.hoje);
+    expect(controller.filter.start, DateTime(2026, 11, 15));
+    expect(controller.filter.end, DateTime(2026, 11, 15));
+  });
+
+  test('7 e 30 dias continuam a partir do dia escolhido', () {
+    final controller = create()
+      ..selectPeriod(AgendaPeriod.hoje)
+      ..selectDay(DateTime(2026, 11, 20))
+      ..selectPeriod(AgendaPeriod.seteDias);
+
+    expect(controller.filter.start, DateTime(2026, 11, 20));
+    expect(controller.filter.end, DateTime(2026, 11, 26));
+
+    controller.selectPeriod(AgendaPeriod.trintaDias);
+
+    expect(controller.filter.start, DateTime(2026, 11, 20));
+    expect(controller.filter.end, DateTime(2026, 12, 19));
+  });
+
+  test('tocar num dia com período personalizado volta para 7 dias', () {
     final controller = create()
       ..selectRange(DateTime(2026, 11, 20), DateTime(2026, 11, 28))
       ..selectDay(DateTime(2026, 11, 22));
 
-    expect(controller.filter.period, AgendaPeriod.hoje);
+    expect(controller.filter.period, AgendaPeriod.seteDias);
     expect(controller.filter.start, DateTime(2026, 11, 22));
+    expect(controller.filter.end, DateTime(2026, 11, 28));
   });
 
   test('a faixa começa numa segunda e inclui um dia passado escolhido', () {
