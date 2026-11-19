@@ -93,6 +93,11 @@ Equipment equipmentFixture({
   String name = 'Freezer 01',
   EquipmentStatus status = EquipmentStatus.operando,
   String? category = 'Refrigeração',
+  String? brand,
+  String? model,
+  String? serialNumber,
+  DateTime? installedAt,
+  String? notes,
 }) => Equipment(
   id: id,
   storeId: storeId,
@@ -101,6 +106,11 @@ Equipment equipmentFixture({
   status: status,
   createdAt: DateTime(2026, 1, 1),
   category: category,
+  brand: brand,
+  model: model,
+  serialNumber: serialNumber,
+  installedAt: installedAt,
+  notes: notes,
 );
 
 MaintenanceOrder orderFixture({
@@ -112,6 +122,7 @@ MaintenanceOrder orderFixture({
   DateTime? scheduledFor,
   DateTime? completedAt,
   String? assignedTo,
+  String? description,
 }) => MaintenanceOrder(
   id: id,
   equipmentId: equipmentId,
@@ -121,6 +132,7 @@ MaintenanceOrder orderFixture({
   scheduledFor: scheduledFor,
   completedAt: completedAt,
   assignedTo: assignedTo,
+  description: description,
   createdAt: DateTime(2026, 10, 1),
   updatedAt: DateTime(2026, 10, 1),
 );

@@ -114,6 +114,8 @@ void main() {
   });
 
   group('EquipmentDetailPage', () {
+    final now = DateTime(2026, 11, 17, 9);
+
     Future<void> pump(
       WidgetTester t, {
       UserRole role = UserRole.tecnico,
@@ -137,13 +139,54 @@ void main() {
             role: role,
             currentUserId: userId,
             onBack: onBack ?? () {},
+            clock: () => now,
           ),
         ),
       );
       await t.pumpAndSettle();
     }
 
-    testWidgets('mostra dados, status e histórico; oculta campos vazios', (
+    testWidgets('cabeçalho: voltar para a loja, nome, status e série', (
+      t,
+    ) async {
+      await pump(t, equipment: equipmentFixture(serialNumber: 'AC-0012'));
+      expect(find.text('Freezer 01'), findsOneWidget);
+      expect(find.text('OPERANDO'), findsOneWidget);
+      // "Loja Centro" aparece no link de voltar e no subtítulo.
+      expect(find.text('Loja Centro'), findsOneWidget);
+      expect(find.text('Loja Centro · Série AC-0012'), findsOneWidget);
+    });
+
+    testWidgets('cartão de dados: mostra preenchidos e oculta vazios', (
+      t,
+    ) async {
+      await pump(
+        t,
+        equipment: equipmentFixture(
+          model: 'Split 12000',
+          serialNumber: 'AC-0012-BR',
+          installedAt: DateTime(2023, 3, 14),
+        ),
+        orders: [orderFixture(scheduledFor: DateTime(2026, 11, 17, 14))],
+      );
+      expect(find.text('MODELO'), findsOneWidget);
+      expect(find.text('Split 12000'), findsOneWidget);
+      expect(find.text('Nº DE SÉRIE'), findsOneWidget);
+      expect(find.text('14/03/2023'), findsOneWidget);
+      expect(find.text('PRÓXIMA PREVENTIVA'), findsOneWidget);
+      expect(find.text('Hoje, 14:00'), findsOneWidget);
+      expect(find.text('MARCA'), findsNothing);
+      expect(find.text('OBSERVAÇÕES'), findsNothing);
+    });
+
+    testWidgets('sem preventiva agendada não mostra a próxima preventiva', (
+      t,
+    ) async {
+      await pump(t, equipment: equipmentFixture(model: 'Split'));
+      expect(find.text('PRÓXIMA PREVENTIVA'), findsNothing);
+    });
+
+    testWidgets('histórico: tipo, data, técnico, descrição e contagem', (
       t,
     ) async {
       await pump(
@@ -153,17 +196,26 @@ void main() {
             type: OrderType.corretiva,
             status: OrderStatus.concluida,
             completedAt: DateTime(2026, 9, 5),
+            assignedTo: 'u9',
+            description: 'Troca do capacitor',
           ),
         ],
       );
-      expect(find.text('Freezer 01'), findsOneWidget);
-      expect(find.text('OPERANDO'), findsOneWidget);
-      expect(find.text('Loja Centro'), findsOneWidget);
-      expect(find.text('Refrigeração'), findsOneWidget);
-      expect(find.text('Marca'), findsNothing);
-      expect(find.text('Corretiva'), findsOneWidget);
-      expect(find.text('CONCLUÍDA'), findsOneWidget);
+      expect(find.text('Histórico de manutenção'), findsOneWidget);
+      expect(find.text('1 registro'), findsOneWidget);
+      expect(find.text('CORRETIVA'), findsOneWidget);
+      expect(find.text('CONCLUÍDA'), findsNothing);
       expect(find.text('05/09/2026'), findsOneWidget);
+      expect(find.text('Técnico'), findsOneWidget);
+      expect(find.text('Troca do capacitor'), findsOneWidget);
+    });
+
+    testWidgets('ordem em aberto mostra o selo de status ao lado do tipo', (
+      t,
+    ) async {
+      await pump(t, orders: [orderFixture()]);
+      expect(find.text('PREVENTIVA'), findsOneWidget);
+      expect(find.text('ABERTA'), findsOneWidget);
     });
 
     testWidgets('sem histórico mostra o texto vazio', (t) async {
@@ -172,11 +224,12 @@ void main() {
         find.text('Nenhuma manutenção registrada para este equipamento.'),
         findsOneWidget,
       );
+      expect(find.text('0 registros'), findsOneWidget);
     });
 
     testWidgets('técnico sem ordem atribuída só abre chamado', (t) async {
       await pump(t);
-      expect(find.text('Abrir chamado'), findsOneWidget);
+      expect(find.text('Abrir chamado corretivo'), findsOneWidget);
       expect(find.text('Registrar manutenção'), findsNothing);
     });
 
@@ -186,7 +239,7 @@ void main() {
       await pump(t, orders: [orderFixture(assignedTo: 'u1')]);
       expect(find.text('Registrar manutenção'), findsOneWidget);
       expect(find.text('Editar'), findsNothing);
-      expect(find.text('Ver QR Code'), findsNothing);
+      expect(find.text('Ver QR Code do equipamento'), findsNothing);
     });
 
     testWidgets('lojista só abre chamado', (t) async {
@@ -195,33 +248,37 @@ void main() {
         role: UserRole.lojista,
         orders: [orderFixture(assignedTo: 'u1')],
       );
-      expect(find.text('Abrir chamado'), findsOneWidget);
+      expect(find.text('Abrir chamado corretivo'), findsOneWidget);
       expect(find.text('Registrar manutenção'), findsNothing);
       expect(find.text('Editar'), findsNothing);
-      expect(find.text('Ver QR Code'), findsNothing);
+      expect(find.text('Ver QR Code do equipamento'), findsNothing);
     });
 
     testWidgets('gestor edita e vê o QR Code', (t) async {
       await pump(t, role: UserRole.gestor);
       expect(find.text('Editar'), findsOneWidget);
-      expect(find.text('Ver QR Code'), findsOneWidget);
+      expect(find.text('Ver QR Code do equipamento'), findsOneWidget);
       expect(find.text('Registrar manutenção'), findsNothing);
     });
 
     testWidgets('Ver todas expande o histórico', (t) async {
-      await t.binding.setSurfaceSize(const Size(400, 6000));
+      await t.binding.setSurfaceSize(const Size(400, 8000));
       addTearDown(() => t.binding.setSurfaceSize(null));
       await pump(
         t,
         orders: [
           for (var i = 0; i < 22; i++)
-            orderFixture(id: 'o$i', completedAt: DateTime(2026, 1, 1 + i)),
+            orderFixture(
+              id: 'o$i',
+              status: OrderStatus.concluida,
+              completedAt: DateTime(2026, 1, 1 + i),
+            ),
         ],
       );
-      expect(find.text('Preventiva'), findsNWidgets(20));
+      expect(find.text('PREVENTIVA'), findsNWidgets(20));
       await t.tap(find.text('Ver todas (22)'));
       await t.pumpAndSettle();
-      expect(find.text('Preventiva'), findsNWidgets(22));
+      expect(find.text('PREVENTIVA'), findsNWidgets(22));
     });
 
     testWidgets('equipamento não encontrado mostra mensagem e volta', (
@@ -242,7 +299,7 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(find.textContaining('Equipamento não encontrado'), findsOneWidget);
-      await t.tap(find.text('Voltar'));
+      await t.tap(find.text('Fechar'));
       expect(voltou, isTrue);
     });
 
