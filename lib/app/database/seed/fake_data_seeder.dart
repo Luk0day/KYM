@@ -78,7 +78,7 @@ class FakeDataSeeder {
     String category, {
     String? brand,
     String? model,
-    String status = 'operando',
+    EquipmentStatus status = EquipmentStatus.operando,
   }) => EquipmentsCompanion.insert(
     id: '00000000-0000-4000-8000-0000000000e${n.toRadixString(16)}',
     storeId: storeId,
@@ -106,7 +106,7 @@ class FakeDataSeeder {
       'Refrigeração',
       brand: 'Elber',
       model: 'CF-300',
-      status: 'em_manutencao',
+      status: EquipmentStatus.emManutencao,
     ),
     _eq(
       3,
@@ -132,7 +132,7 @@ class FakeDataSeeder {
       'Refrigeração',
       brand: 'Metalfrio',
       model: 'DA550',
-      status: 'parado',
+      status: EquipmentStatus.parado,
     ),
     _eq(
       7,

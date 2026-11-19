@@ -23,6 +23,15 @@ enum OrderStatus {
   final String dbValue;
 }
 
+enum EquipmentStatus {
+  operando('operando'),
+  emManutencao('em_manutencao'),
+  parado('parado');
+
+  const EquipmentStatus(this.dbValue);
+  final String dbValue;
+}
+
 enum PhotoKind {
   chamado('chamado'),
   antes('antes'),
@@ -64,6 +73,22 @@ class OrderStatusConverter extends TypeConverter<OrderStatus, String> {
 
   @override
   String toSql(OrderStatus value) => value.dbValue;
+}
+
+class EquipmentStatusConverter extends TypeConverter<EquipmentStatus, String> {
+  const EquipmentStatusConverter();
+
+  /// Valor desconhecido (dado local antigo ou app desatualizado diante de um
+  /// status novo do servidor) volta para `operando`, o padrão do banco, em vez
+  /// de quebrar a lista.
+  @override
+  EquipmentStatus fromSql(String fromDb) => EquipmentStatus.values.firstWhere(
+    (e) => e.dbValue == fromDb,
+    orElse: () => EquipmentStatus.operando,
+  );
+
+  @override
+  String toSql(EquipmentStatus value) => value.dbValue;
 }
 
 class PhotoKindConverter extends TypeConverter<PhotoKind, String> {
