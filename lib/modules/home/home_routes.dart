@@ -10,6 +10,7 @@ abstract final class HomeRoutes {
   static const String qrCodesPath = '/qr-codes';
   static const String perfilPath = '/perfil';
   static const String lojaPath = '/lojas/:id';
+  static const String equipamentoPath = '/equipamentos/:id';
 
   static const String painel = '$root$painelPath';
   static const String lojas = '$root$lojasPath';
@@ -20,6 +21,9 @@ abstract final class HomeRoutes {
 
   /// Detalhe da loja, aberto por cima da casca (mesmo modelo do leitor de QR).
   static String loja(String id) => '$root/lojas/$id';
+
+  /// Detalhe do equipamento por id. A B32 redireciona o QR para esta rota.
+  static String equipamento(String id) => '$root/equipamentos/$id';
 
   static String of(AppDestination destination) => switch (destination) {
     AppDestination.painel => painel,
