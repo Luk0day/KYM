@@ -1,3 +1,4 @@
+import '../../../orders/domain/entities/maintenance_order.dart';
 import '../../domain/entities/equipment_status.dart';
 
 const String equipmentLoadErrorMessage =
@@ -20,12 +21,15 @@ String openOrdersLabel(int open, int overdue) {
   return open == 1 ? '1 ordem aberta' : '$open ordens abertas';
 }
 
-/// Até duas letras da categoria (ex.: "Refrigeração" -> "RE").
-String categoryInitials(String? category) {
-  final text = category?.trim() ?? '';
-  if (text.isEmpty) return '';
-  final end = text.length < 2 ? text.length : 2;
-  return text.substring(0, end).toUpperCase();
+/// Iniciais do equipamento no Figma: prefixo do código de série (ex.:
+/// "AC-0012" -> "AC"). Sem série, as duas primeiras letras do nome.
+String equipmentInitials(String? serialNumber, String name) {
+  final serial = serialNumber?.trim() ?? '';
+  final prefix = RegExp(r'^[A-Za-zÀ-ú]{1,2}').stringMatch(serial);
+  final source = prefix ?? name.trim();
+  if (source.isEmpty) return '';
+  final end = source.length < 2 ? source.length : 2;
+  return source.substring(0, end).toUpperCase();
 }
 
 String formatDate(DateTime value) {
@@ -33,3 +37,12 @@ String formatDate(DateTime value) {
   return '${d.day.toString().padLeft(2, '0')}/'
       '${d.month.toString().padLeft(2, '0')}/${d.year}';
 }
+
+String orderTypeLabel(OrderType type) => switch (type) {
+  OrderType.preventiva => 'Preventiva',
+  OrderType.corretiva => 'Corretiva',
+};
+
+String lastMaintenanceLabel(DateTime? date) => date == null
+    ? 'Sem manutenção registrada'
+    : 'Última manutenção: ${formatDate(date)}';

@@ -5,8 +5,8 @@ import '../entities/equipment.dart';
 import '../entities/equipment_list_item.dart';
 import '../repositories/equipment_repository.dart';
 
-/// Equipamentos de uma loja com a contagem de ordens abertas e atrasadas.
-/// Atrasados primeiro, depois por nome.
+/// Equipamentos de uma loja com o resumo das ordens de cada um. Atrasados
+/// primeiro, depois por nome.
 class WatchStoreEquipment {
   WatchStoreEquipment(
     this._equipment,
@@ -29,27 +29,53 @@ class WatchStoreEquipment {
     List<MaintenanceOrder> orders,
   ) {
     final now = _clock();
-    final open = <String, int>{};
-    final overdue = <String, int>{};
-
+    final byEquipment = <String, List<MaintenanceOrder>>{};
     for (final order in orders) {
-      if (!_isOpen(order.status)) continue;
-      open.update(order.equipmentId, (n) => n + 1, ifAbsent: () => 1);
-      final due = order.scheduledFor;
-      if (due != null && due.isBefore(now)) {
-        overdue.update(order.equipmentId, (n) => n + 1, ifAbsent: () => 1);
-      }
+      byEquipment.putIfAbsent(order.equipmentId, () => []).add(order);
     }
 
     final items = [
       for (final e in equipment)
-        EquipmentListItem(
-          equipment: e,
-          openOrders: open[e.id] ?? 0,
-          overdueOrders: overdue[e.id] ?? 0,
-        ),
+        _summarize(e, byEquipment[e.id] ?? const [], now),
     ]..sort(_compare);
     return items;
+  }
+
+  EquipmentListItem _summarize(
+    Equipment equipment,
+    List<MaintenanceOrder> orders,
+    DateTime now,
+  ) {
+    bool isOverdue(MaintenanceOrder o) =>
+        o.scheduledFor != null && o.scheduledFor!.isBefore(now);
+
+    final open = orders.where((o) => _isOpen(o.status)).toList()
+      ..sort((a, b) {
+        if (isOverdue(a) != isOverdue(b)) return isOverdue(a) ? -1 : 1;
+        final da = a.scheduledFor, db = b.scheduledFor;
+        if (da == null || db == null) {
+          return da == db ? 0 : (da == null ? 1 : -1);
+        }
+        return da.compareTo(db);
+      });
+
+    DateTime? lastDone;
+    for (final o in orders) {
+      final done = o.completedAt;
+      if (o.status == OrderStatus.concluida &&
+          done != null &&
+          (lastDone == null || done.isAfter(lastDone))) {
+        lastDone = done;
+      }
+    }
+
+    return EquipmentListItem(
+      equipment: equipment,
+      openOrders: open.length,
+      overdueOrders: open.where(isOverdue).length,
+      nextOrderType: open.isEmpty ? null : open.first.type,
+      lastMaintenanceAt: lastDone,
+    );
   }
 
   static bool _isOpen(OrderStatus status) =>

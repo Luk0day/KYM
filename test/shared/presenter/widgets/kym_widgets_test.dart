@@ -43,8 +43,9 @@ void main() {
       expect(find.text('Entrar'), findsNothing);
     });
 
-    testWidgets('cada variante usa o botão do Material correspondente',
-        (tester) async {
+    testWidgets('cada variante usa o botão do Material correspondente', (
+      tester,
+    ) async {
       Future<void> pumpVariant(KymButtonVariant variant) {
         return tester.pumpWidget(
           _wrap(KymButton(label: 'Ação', onPressed: () {}, variant: variant)),
@@ -118,9 +119,7 @@ void main() {
 
     testWidgets('sucesso mostra o ícone de check', (tester) async {
       await tester.pumpWidget(
-        _wrap(
-          const KymBanner(message: 'Salvo.', type: KymBannerType.success),
-        ),
+        _wrap(const KymBanner(message: 'Salvo.', type: KymBannerType.success)),
       );
 
       expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);

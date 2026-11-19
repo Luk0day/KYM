@@ -125,12 +125,12 @@ void main() {
 
     testWidgets('técnico vê o check-in e lojista não', (t) async {
       await pump(t, stores: [_store()], canCheckIn: true);
-      expect(find.text('Fazer check-in'), findsOneWidget);
+      expect(find.text('Fazer check-in (ler QR da loja)'), findsOneWidget);
     });
 
     testWidgets('sem permissão não mostra o check-in', (t) async {
       await pump(t, stores: [_store()]);
-      expect(find.text('Fazer check-in'), findsNothing);
+      expect(find.text('Fazer check-in (ler QR da loja)'), findsNothing);
     });
 
     testWidgets('loja inativa recebe o selo', (t) async {
