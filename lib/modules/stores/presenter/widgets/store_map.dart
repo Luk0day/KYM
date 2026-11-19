@@ -45,47 +45,73 @@ class _StoreMapState extends State<StoreMap> {
     return Semantics(
       label: 'Mapa com a localização da ${widget.storeName}',
       child: ExcludeSemantics(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: SizedBox(
-            height: 180,
-            child: FlutterMap(
-              options: MapOptions(
-                initialCenter: point,
-                initialZoom: 16,
-                // Sem gestos: o mapa não disputa a rolagem da página.
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.none,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: SizedBox(
+              height: 160,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: point,
+                  initialZoom: 16,
+                  // Sem gestos: o mapa não disputa a rolagem da página.
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.none,
+                  ),
                 ),
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'br.edu.ifpe.mobile.kym',
-                  errorTileCallback: _onTileError,
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: point,
-                      width: 40,
-                      height: 40,
-                      child: const Icon(
-                        Icons.location_on,
-                        color: AppColors.accent,
-                        size: 40,
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'br.edu.ifpe.mobile.kym',
+                    errorTileCallback: _onTileError,
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: point,
+                        width: 56,
+                        height: 56,
+                        child: const _StorePin(),
                       ),
-                    ),
-                  ],
-                ),
-                const SimpleAttributionWidget(
-                  source: Text('© OpenStreetMap contributors'),
-                ),
-              ],
+                    ],
+                  ),
+                  const SimpleAttributionWidget(
+                    source: Text('© OpenStreetMap contributors'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Marcador do Figma: loja num círculo laranja com halo.
+class _StorePin extends StatelessWidget {
+  const _StorePin();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: AppColors.accent.withValues(alpha: 0.18),
+    ),
+    alignment: Alignment.center,
+    child: Container(
+      width: 36,
+      height: 36,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.accent,
+      ),
+      child: const Icon(Icons.storefront, size: 20, color: AppColors.onAccent),
+    ),
+  );
 }
