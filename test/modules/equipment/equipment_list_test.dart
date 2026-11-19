@@ -104,16 +104,19 @@ void main() {
     );
   });
 
-  testWidgets('mostra os três status e os selos de ordem', (t) async {
+  testWidgets('selo mostra o status ou o tipo da ordem aberta', (t) async {
     await seed(t);
     await pumpList(t);
 
-    expect(find.text('Equipamentos · 3 equipamentos'), findsOneWidget);
+    expect(find.text('Equipamentos'), findsOneWidget);
+    expect(find.text('3 equipamentos'), findsOneWidget);
+    // Sem ordem aberta o selo é o status; com ordem aberta é o tipo da ordem
+    // e a situação fora do normal vai para a linha de baixo.
     expect(find.text('OPERANDO'), findsOneWidget);
-    expect(find.text('EM MANUTENÇÃO'), findsOneWidget);
-    expect(find.text('PARADO'), findsOneWidget);
-    expect(find.text('1 ORDEM ATRASADA'), findsOneWidget);
-    expect(find.text('1 ORDEM ABERTA'), findsOneWidget);
+    expect(find.text('PREVENTIVA'), findsOneWidget);
+    expect(find.text('CORRETIVA'), findsOneWidget);
+    expect(find.textContaining('Em manutenção'), findsOneWidget);
+    expect(find.textContaining('Parado'), findsOneWidget);
   });
 
   testWidgets('equipamento com ordem atrasada aparece primeiro', (t) async {

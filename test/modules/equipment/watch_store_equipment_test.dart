@@ -86,6 +86,52 @@ void main() {
       expect(names, ['Charlie', 'Alfa', 'Beta']);
     });
 
+    test('tipo da próxima ordem e última manutenção concluída', () async {
+      final usecase = build(
+        FakeEquipmentRepository([equipmentFixture(id: 'a')]),
+        FakeOrderRepository([
+          orderFixture(
+            id: '1',
+            equipmentId: 'a',
+            status: orders.OrderStatus.concluida,
+            completedAt: DateTime(2026, 9, 5),
+          ),
+          orderFixture(
+            id: '2',
+            equipmentId: 'a',
+            status: orders.OrderStatus.concluida,
+            completedAt: DateTime(2026, 10, 12),
+          ),
+          orderFixture(
+            id: '3',
+            equipmentId: 'a',
+            type: orders.OrderType.corretiva,
+            scheduledFor: DateTime(2026, 12, 1),
+          ),
+          orderFixture(
+            id: '4',
+            equipmentId: 'a',
+            type: orders.OrderType.preventiva,
+            scheduledFor: DateTime(2026, 11, 1),
+          ),
+        ]),
+      );
+
+      final item = (await usecase('s1').first).single;
+      // A atrasada (preventiva de 01/11) vem antes da corretiva no prazo.
+      expect(item.nextOrderType, orders.OrderType.preventiva);
+      expect(item.lastMaintenanceAt, DateTime(2026, 10, 12));
+    });
+
+    test('sem ordens: sem tipo e sem última manutenção', () async {
+      final usecase = build(
+        FakeEquipmentRepository([equipmentFixture(id: 'a')]),
+        FakeOrderRepository(),
+      );
+      final item = (await usecase('s1').first).single;
+      expect(item.nextOrderType, isNull);
+      expect(item.lastMaintenanceAt, isNull);
+    });
     test('só traz equipamentos da loja pedida', () async {
       final usecase = build(
         FakeEquipmentRepository([

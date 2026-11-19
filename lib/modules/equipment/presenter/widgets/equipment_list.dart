@@ -54,11 +54,21 @@ class _EquipmentListState extends State<EquipmentList> {
           children: [
             Semantics(
               header: true,
-              child: Text(
-                ready
-                    ? 'Equipamentos · ${equipmentCountLabel(c.items.length)}'
-                    : 'Equipamentos',
-                style: AppTextStyles.sectionTitle,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  const Text('Equipamentos', style: AppTextStyles.sectionTitle),
+                  if (ready) ...[
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        equipmentCountLabel(c.items.length),
+                        style: AppTextStyles.metadata,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             const SizedBox(height: 12),
