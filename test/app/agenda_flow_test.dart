@@ -131,6 +131,11 @@ Future<void> _unmount(WidgetTester tester) async {
 }
 
 Future<void> _tapDay(WidgetTester tester, DateTime day) async {
+  await tester.scrollUntilVisible(
+    find.byType(AgendaDayStrip),
+    -200,
+    scrollable: find.byType(Scrollable).first,
+  );
   final box = find.byKey(AgendaDayStrip.keyFor(day));
   await tester.scrollUntilVisible(
     box,
@@ -167,11 +172,11 @@ void main() {
     expect(find.text('Ar-condicionado Salão'), findsOneWidget);
     expect(find.text('Gerador'), findsNothing);
     expect(find.text('Sem data'), findsNothing);
-    expect(find.text('ATRASADA'), findsOneWidget);
-    expect(find.text('CONCLUÍDA'), findsOneWidget);
-    expect(find.text('PENDENTE'), findsNWidgets(2));
     expect(find.text('CORRETIVA'), findsOneWidget);
     expect(find.text('PREVENTIVA'), findsNWidgets(3));
+    expect(find.text('Atrasada'), findsOneWidget);
+    expect(find.text('Concluída'), findsOneWidget);
+    expect(find.text('Pendente'), findsNWidgets(2));
 
     await _unmount(tester);
   });

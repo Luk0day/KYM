@@ -47,6 +47,15 @@ abstract final class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
+  /// Situação escrita no rodapé dos cards; 14sp em negrito conta como texto
+  /// grande no contraste, o que permite o laranja do Figma sobre o branco.
+  static const TextStyle statusLabel = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textSecondary,
+  );
+
   static const TextStyle fieldLabel = TextStyle(
     fontFamily: fontFamily,
     fontSize: 13,

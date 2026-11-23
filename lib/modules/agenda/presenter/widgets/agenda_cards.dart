@@ -203,76 +203,76 @@ class AgendaOrderCard extends StatelessWidget {
     final when = date == null
         ? 'Sem data'
         : AgendaDates.shortRelative(date, today);
-    final (situationLabel, situationTone) = switch (situation) {
-      OrderSituation.atrasada => ('Atrasada', KymChipTone.overdue),
-      OrderSituation.concluida => ('Concluída', KymChipTone.done),
-      _ => ('Pendente', KymChipTone.pending),
+    final (typeLabel, typeTone) = corrective
+        ? ('Corretiva', KymChipTone.overdue)
+        : ('Preventiva', KymChipTone.pending);
+    final (situationLabel, situationColor) = switch (situation) {
+      OrderSituation.atrasada => ('Atrasada', AppColors.accent),
+      OrderSituation.concluida => ('Concluída', AppColors.doneFg),
+      _ => ('Pendente', AppColors.primary),
     };
-    final typeLabel = corrective ? 'Corretiva' : 'Preventiva';
-    final description = order.description?.trim();
+    final description = order.description?.trim() ?? '';
 
     return MergeSemantics(
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: AppColors.border),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AgendaInitialsTile(
-                  text: item.equipmentName,
-                  warm: corrective || situation == OrderSituation.atrasada,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.equipmentName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.cardTitle,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${item.storeName} · $when',
-                        style: AppTextStyles.metadata,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                MediaQuery.withClampedTextScaling(
-                  maxScaleFactor: 1.3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      KymChip(label: typeLabel, tone: KymChipTone.neutral),
-                      const SizedBox(height: 6),
-                      KymChip(label: situationLabel, tone: situationTone),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (description != null && description.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Row(
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.notes_rounded,
-                    size: 16,
-                    color: AppColors.textSecondary,
+                  AgendaInitialsTile(
+                    text: item.equipmentName,
+                    warm: corrective || situation == OrderSituation.atrasada,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.equipmentName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.cardTitle,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${item.storeName} · $when',
+                          style: AppTextStyles.metadata,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: 1.3,
+                    child: KymChip(label: typeLabel, tone: typeTone),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, thickness: 1, color: AppColors.border),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Row(
+                children: [
+                  if (description.isNotEmpty) ...[
+                    const Icon(
+                      Icons.notes_rounded,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
                   Expanded(
                     child: Text(
                       description,
@@ -281,9 +281,16 @@ class AgendaOrderCard extends StatelessWidget {
                       style: AppTextStyles.metadata,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Text(
+                    situationLabel,
+                    style: AppTextStyles.statusLabel.copyWith(
+                      color: situationColor,
+                    ),
+                  ),
                 ],
               ),
-            ],
+            ),
           ],
         ),
       ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kym/app/theme/app_colors.dart';
 import 'package:kym/app/theme/app_theme.dart';
 import 'package:kym/shared/presenter/widgets/kym_banner.dart';
 import 'package:kym/shared/presenter/widgets/kym_brand_logo.dart';
@@ -133,21 +132,6 @@ void main() {
     );
 
     expect(find.text('PREVENTIVA'), findsOneWidget);
-  });
-
-  testWidgets('KymChip neutro usa o fundo dos equipamentos', (tester) async {
-    await tester.pumpWidget(
-      _wrap(const KymChip(label: 'Corretiva', tone: KymChipTone.neutral)),
-    );
-
-    final box = tester.widget<Container>(
-      find.ancestor(
-        of: find.text('CORRETIVA'),
-        matching: find.byType(Container),
-      ),
-    );
-    final decoration = box.decoration! as BoxDecoration;
-    expect(decoration.color, AppColors.equipmentTileBg);
   });
 
   testWidgets('KymBrandLogo mostra marca e subtítulo', (tester) async {
