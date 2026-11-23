@@ -309,6 +309,25 @@ void main() {
     await _unmount(tester);
   });
 
+  testWidgets('tocar de novo na aba Agenda volta ao topo sem nova transição', (
+    tester,
+  ) async {
+    await _openAgenda(tester);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(find.text('Olá, Técnico Teste').hitTestable(), findsNothing);
+
+    await tester.tap(find.text('Agenda').last);
+    await tester.pump();
+
+    expect(find.byType(AgendaPage), findsOneWidget);
+
+    await tester.pumpAndSettle();
+    expect(find.text('Olá, Técnico Teste').hitTestable(), findsOneWidget);
+
+    await _unmount(tester);
+  });
+
   testWidgets('Personalizado abre o seletor de período em português', (
     tester,
   ) async {

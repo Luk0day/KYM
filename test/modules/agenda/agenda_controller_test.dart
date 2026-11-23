@@ -123,6 +123,30 @@ void main() {
     },
   );
 
+  test('refresh recarrega sem trocar a lista pelo carregando', () async {
+    final controller = create()..start();
+    items.add([_item('Ar-condicionado', DateTime(2026, 11, 16))]);
+    await pumpEventQueue();
+
+    controller.refresh();
+
+    expect(controller.status, AgendaStatus.ready);
+    expect(controller.sections, isNotEmpty);
+    verify(() => repository.watchAgenda(assignedTo: 'tec')).called(2);
+    controller.dispose();
+  });
+
+  test('refresh depois de um erro volta a carregar', () async {
+    final controller = create()..start();
+    items.addError(StateError('falhou'));
+    await pumpEventQueue();
+
+    controller.refresh();
+
+    expect(controller.status, AgendaStatus.loading);
+    controller.dispose();
+  });
+
   test('lembra o filtro do usuário durante a sessão', () {
     create().selectSituation(AgendaSituationFilter.atrasadas);
 

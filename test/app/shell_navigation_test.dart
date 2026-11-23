@@ -136,6 +136,23 @@ void main() {
       await _unmount(tester);
     });
 
+    testWidgets('tocar na aba aberta não refaz a transição de tela', (
+      tester,
+    ) async {
+      await _pumpApp(tester);
+      await _signIn(tester, 'tecnico@kym.test');
+
+      await tester.tap(find.text('Painel'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Olá, Técnico'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.text('Olá, Técnico'), findsOneWidget);
+      await _unmount(tester);
+    });
+
     testWidgets('botão central abre o leitor em tela cheia e volta', (
       tester,
     ) async {

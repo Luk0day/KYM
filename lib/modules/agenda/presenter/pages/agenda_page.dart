@@ -3,6 +3,7 @@ import 'package:flutter_modular/flutter_modular.dart' show ModularStateX;
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/presenter/navigation/tab_reselect.dart';
 import '../../../../shared/presenter/widgets/kym_button.dart';
 import '../../domain/entities/agenda_filter.dart';
 import '../controllers/agenda_controller.dart';
@@ -19,6 +20,8 @@ class AgendaPage extends StatefulWidget {
 
 class _AgendaPageState extends State<AgendaPage> {
   late final AgendaController _controller;
+  final ScrollController _scroll = ScrollController();
+  TabReselect? _reselect;
 
   static const _situations = [
     AgendaChipOption(AgendaSituationFilter.todas, 'Todas'),
@@ -31,6 +34,25 @@ class _AgendaPageState extends State<AgendaPage> {
   void initState() {
     super.initState();
     _controller = context.read<AgendaController>()..start();
+    _reselect = TabReselectScope.maybeOf(context)?..addListener(_onReselect);
+  }
+
+  void _onReselect() {
+    _controller.refresh();
+    if (_scroll.hasClients && _scroll.offset > 0) {
+      _scroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _reselect?.removeListener(_onReselect);
+    _scroll.dispose();
+    super.dispose();
   }
 
   Future<void> _pickRange() async {
@@ -64,6 +86,7 @@ class _AgendaPageState extends State<AgendaPage> {
         child: ListenableBuilder(
           listenable: _controller,
           builder: (context, _) => ListView(
+            controller: _scroll,
             padding: const EdgeInsets.only(bottom: 24),
             children: [..._buildTop(), ..._buildBody()],
           ),

@@ -88,11 +88,25 @@ class AgendaController extends ChangeNotifier {
   }
 
   void start() {
-    _subscription?.cancel();
     if (_status != AgendaStatus.loading) {
       _status = AgendaStatus.loading;
       _notify();
     }
+    _listen();
+  }
+
+  /// Recarrega os dados mantendo a lista na tela; só mostra o carregando se
+  /// ainda não havia dados.
+  void refresh() {
+    if (_status != AgendaStatus.ready) {
+      start();
+      return;
+    }
+    _listen();
+  }
+
+  void _listen() {
+    _subscription?.cancel();
     _subscription = _watchAgenda(userId: user.id, role: user.role).listen(
       (items) {
         _items = items;
