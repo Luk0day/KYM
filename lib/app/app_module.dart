@@ -11,6 +11,8 @@ import '../modules/home/home_module.dart';
 import '../modules/home/home_routes.dart';
 import '../modules/orders/domain/repositories/order_repository.dart';
 import '../modules/orders/infra/repositories/order_repository_impl.dart';
+import '../modules/scanner/presenter/widgets/scanner_camera_builder.dart';
+import '../modules/scanner/scanner_module.dart';
 import '../modules/stores/domain/repositories/store_repository.dart';
 import '../modules/stores/infra/repositories/store_repository_impl.dart';
 import 'database/app_database.dart';
@@ -28,11 +30,15 @@ class AppModule extends Module {
     required this.authDataSourceFactory,
     AppDatabase Function()? databaseFactory,
     this.agendaClock = const AgendaClock(),
+    this.scannerCameraBuilder,
   }) : databaseFactory = databaseFactory ?? AppDatabase.new;
 
   final AuthDataSource Function() authDataSourceFactory;
   final AppDatabase Function() databaseFactory;
   final AgendaClock agendaClock;
+
+  /// Troca a câmera do leitor de QR nos testes; em produção fica nulo.
+  final ScannerCameraBuilder? scannerCameraBuilder;
 
   @override
   void register(ModularContext c) {
@@ -61,6 +67,7 @@ class AppModule extends Module {
         ),
       )
       ..module(AgendaModule(clock: agendaClock))
-      ..module(HomeModule());
+      ..module(HomeModule())
+      ..module(ScannerModule(cameraBuilder: scannerCameraBuilder));
   }
 }

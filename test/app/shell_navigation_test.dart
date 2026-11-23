@@ -7,8 +7,9 @@ import 'package:kym/app/app_module.dart';
 import 'package:kym/app/database/app_database.dart';
 import 'package:kym/modules/auth/infra/datasources/fake_auth_datasource.dart';
 import 'package:kym/modules/home/home_routes.dart';
-import 'package:kym/modules/home/presenter/pages/qr_scanner_placeholder_page.dart';
 import 'package:kym/modules/home/presenter/pages/shell_page.dart';
+import 'package:kym/modules/scanner/presenter/pages/scanner_page.dart';
+import 'package:kym/modules/scanner/scanner_routes.dart';
 import 'package:kym/shared/presenter/widgets/kym_bottom_nav_bar.dart';
 
 Future<void> _pumpApp(
@@ -24,6 +25,13 @@ Future<void> _pumpApp(
       module: AppModule(
         authDataSourceFactory: () => FakeAuthDataSource(latency: Duration.zero),
         databaseFactory: () => AppDatabase.forTesting(NativeDatabase.memory()),
+        // O scanner real não roda em teste: a câmera vira um espaço vazio.
+        scannerCameraBuilder: (
+          context, {
+          required active,
+          required onDetect,
+          required onOpenSettings,
+        }) => const SizedBox.expand(),
       ),
       child: const KymApp(),
     ),
@@ -137,13 +145,13 @@ void main() {
       await tester.tap(find.byTooltip('Escanear QR Code'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(QrScannerPlaceholderPage), findsOneWidget);
+      expect(find.byType(ScannerPage), findsOneWidget);
       expect(find.text('Leitor de QR Code'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Voltar'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(QrScannerPlaceholderPage), findsNothing);
+      expect(find.byType(ScannerPage), findsNothing);
       expect(find.text('Olá, Técnico'), findsOneWidget);
     });
 
@@ -180,10 +188,10 @@ void main() {
       await _pumpApp(tester);
       await _signIn(tester, 'gestor@kym.test');
 
-      _navigateFromRoot(tester, HomeRoutes.qr);
+      _navigateFromRoot(tester, ScannerRoutes.root);
       await tester.pumpAndSettle();
 
-      expect(find.byType(QrScannerPlaceholderPage), findsNothing);
+      expect(find.byType(ScannerPage), findsNothing);
       expect(find.text('Olá, Gestor'), findsOneWidget);
     });
 
