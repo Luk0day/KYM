@@ -15,6 +15,7 @@ import '../modules/scanner/presenter/widgets/scanner_camera_builder.dart';
 import '../modules/scanner/scanner_module.dart';
 import '../modules/stores/domain/repositories/store_repository.dart';
 import '../modules/stores/infra/repositories/store_repository_impl.dart';
+import '../modules/stores/stores_module.dart';
 import 'database/app_database.dart';
 import 'database/daos/equipments_dao.dart';
 import 'database/daos/maintenance_orders_dao.dart';
@@ -77,6 +78,7 @@ class AppModule extends Module {
       )
       ..module(AgendaModule(clock: agendaClock))
       ..module(HomeModule())
+      ..module(StoresModule())
       ..module(ScannerModule(cameraBuilder: scannerCameraBuilder));
   }
 }

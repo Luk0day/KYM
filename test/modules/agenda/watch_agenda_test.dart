@@ -30,7 +30,8 @@ void main() {
         role: UserRole.tecnico,
       ).first;
 
-      expect(items, hasLength(2));
+      // f2, f3 e as duas preventivas atrasadas da Loja Centro (f4 e f5).
+      expect(items, hasLength(4));
       expect(
         items.every((i) => i.order.assignedTo == FakeDataSeeder.tecnicoId),
         isTrue,
@@ -49,7 +50,7 @@ void main() {
       role: UserRole.gestor,
     ).first;
 
-    expect(items, hasLength(3));
+    expect(items, hasLength(5));
     expect(items.map((i) => i.equipmentName), contains('Câmara Fria'));
   });
 
@@ -80,7 +81,11 @@ void main() {
       role: UserRole.tecnico,
     ).first;
 
-    expect(items, hasLength(1));
+    expect(items, hasLength(3));
+    expect(
+      items.map((i) => i.order.id),
+      isNot(contains('00000000-0000-4000-8000-0000000000f2')),
+    );
   });
 
   test('atualiza sozinho quando uma ordem nova chega', () async {
@@ -104,7 +109,7 @@ void main() {
     );
     await pumpEventQueue();
 
-    expect(counts, [2, 3]);
+    expect(counts, [4, 5]);
     await subscription.cancel();
   });
 }

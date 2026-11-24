@@ -14,6 +14,8 @@ import '../auth/domain/entities/user_role_permissions.dart';
 import '../auth/presenter/controllers/session_controller.dart';
 import '../auth/presenter/guards/role_guard.dart';
 import '../auth/presenter/utils/user_role_label.dart';
+import '../stores/presenter/controllers/stores_controller.dart';
+import '../stores/presenter/pages/stores_page.dart';
 import 'home_routes.dart';
 import 'presenter/pages/shell_page.dart';
 import 'presenter/pages/tab_placeholder_page.dart';
@@ -68,7 +70,15 @@ class HomeModule extends Module {
         ..route(
           HomeRoutes.lojasPath,
           guards: [_guard(AppDestination.lojas)],
-          child: (context, _) => const TabPlaceholderPage(title: 'Lojas'),
+          // O controller vive só enquanto a aba estiver aberta.
+          provide: (scoped) {
+            scoped.addChangeNotifier<StoresController>(StoresController.new);
+          },
+          child: (context, _) => StoresPage(
+            controller: context.read<StoresController>(),
+            // TODO(B26): abrir os detalhes da loja.
+            onStoreSelected: (_) {},
+          ),
         )
         ..route(
           HomeRoutes.agendaPath,
