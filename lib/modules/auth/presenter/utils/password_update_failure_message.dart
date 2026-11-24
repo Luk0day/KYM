@@ -1,11 +1,13 @@
+import '../../domain/entities/password_policy.dart';
 import '../../domain/errors/auth_failure.dart';
 
 extension PasswordUpdateFailureMessage on AuthFailureType {
   String get passwordUpdateMessage {
     switch (this) {
       case AuthFailureType.weakPassword:
-        return 'Essa senha é fraca. Use pelo menos 6 caracteres e evite '
-            'senhas fáceis de adivinhar.';
+        return 'Essa senha é fraca. Use pelo menos '
+            '${PasswordPolicy.minLength} caracteres e evite senhas fáceis de '
+            'adivinhar.';
       case AuthFailureType.samePassword:
         return 'A nova senha precisa ser diferente da atual.';
       case AuthFailureType.recoveryLinkInvalid:

@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../../../app/storage/key_value_store.dart';
 import '../../../../app/storage/storage_keys.dart';
 import '../../domain/entities/password_recovery_event.dart';
+import '../../domain/entities/password_policy.dart';
 import '../../domain/errors/auth_failure.dart';
 import '../models/auth_user_model.dart';
 import 'auth_datasource.dart';
@@ -65,8 +66,6 @@ class FakeAuthDataSource implements AuthDataSource {
 
   AuthUserModel? _currentUser;
 
-  static const int minPasswordLength = 6;
-
   final Map<String, String> _changedPasswords = {};
   final StreamController<PasswordRecoveryEvent> _recoveryEvents =
       StreamController<PasswordRecoveryEvent>.broadcast();
@@ -106,7 +105,7 @@ class FakeAuthDataSource implements AuthDataSource {
     if (account == null) {
       throw const AuthFailure(AuthFailureType.recoveryLinkInvalid);
     }
-    if (password.length < minPasswordLength) {
+    if (password.length < PasswordPolicy.minLength) {
       throw const AuthFailure(AuthFailureType.weakPassword);
     }
     if (password == _passwordOf(account)) {

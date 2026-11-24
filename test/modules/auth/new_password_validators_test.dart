@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kym/modules/auth/domain/entities/password_policy.dart';
 import 'package:kym/modules/auth/domain/errors/auth_failure.dart';
 import 'package:kym/modules/auth/presenter/utils/auth_failure_message.dart';
 import 'package:kym/modules/auth/presenter/utils/login_validators.dart';
@@ -15,7 +16,7 @@ void main() {
     test('curta pede o mínimo de caracteres', () {
       expect(
         LoginValidators.newPassword('12345'),
-        'Use pelo menos ${LoginValidators.minNewPasswordLength} caracteres.',
+        'Use pelo menos ${PasswordPolicy.minLength} caracteres.',
       );
     });
 
@@ -66,7 +67,7 @@ void main() {
     test('senha fraca cita o mínimo de caracteres', () {
       expect(
         AuthFailureType.weakPassword.passwordUpdateMessage,
-        contains('${LoginValidators.minNewPasswordLength}'),
+        contains('${PasswordPolicy.minLength}'),
       );
     });
 

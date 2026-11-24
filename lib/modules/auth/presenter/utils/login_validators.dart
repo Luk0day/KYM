@@ -1,3 +1,5 @@
+import '../../domain/entities/password_policy.dart';
+
 abstract final class LoginValidators {
   static final RegExp _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 
@@ -20,14 +22,12 @@ abstract final class LoginValidators {
     return null;
   }
 
-  static const int minNewPasswordLength = 6;
-
   static String? newPassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Informe a nova senha.';
     }
-    if (value.length < minNewPasswordLength) {
-      return 'Use pelo menos $minNewPasswordLength caracteres.';
+    if (value.length < PasswordPolicy.minLength) {
+      return 'Use pelo menos ${PasswordPolicy.minLength} caracteres.';
     }
     return null;
   }

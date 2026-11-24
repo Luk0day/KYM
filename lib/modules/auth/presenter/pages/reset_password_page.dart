@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart' show ModularStateX;
 
+import '../../domain/entities/password_policy.dart';
 import '../controllers/reset_password_controller.dart';
 import '../utils/login_validators.dart';
 import '../widgets/feedback_banner.dart';
@@ -166,7 +167,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             _buildHeader(
               context,
               'Escolha uma senha com pelo menos '
-              '${LoginValidators.minNewPasswordLength} caracteres. '
+              '${PasswordPolicy.minLength} caracteres. '
               'Depois, entre no app com ela.',
             ),
             if (errorMessage != null) ...[
