@@ -5,7 +5,7 @@ import 'package:kym/modules/auth/domain/entities/user_role.dart';
 import 'package:kym/modules/stores/domain/entities/store_filter.dart';
 import 'package:kym/modules/stores/domain/entities/store_summary.dart';
 import 'package:kym/modules/stores/domain/repositories/store_list_repository.dart';
-import 'package:kym/modules/stores/domain/services/sync_service.dart';
+import 'package:kym/modules/stores/domain/services/store_sync_trigger.dart';
 import 'package:kym/modules/stores/domain/usecases/filter_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/refresh_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/watch_stores.dart';
@@ -19,20 +19,20 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../support/store_fakes.dart';
 
-class MockSyncService extends Mock implements SyncService {}
+class MockStoreSyncTrigger extends Mock implements StoreSyncTrigger {}
 
 class MockStoreListRepository extends Mock implements StoreListRepository {}
 
 void main() {
   late FakeStoreListRepository repository;
-  late MockSyncService syncService;
+  late MockStoreSyncTrigger syncService;
   StoreSummary? selected;
 
   setUp(() {
     repository = FakeStoreListRepository(sampleStores);
-    syncService = MockSyncService();
+    syncService = MockStoreSyncTrigger();
     selected = null;
-    when(syncService.sync).thenAnswer((_) async {});
+    when(syncService.sync).thenAnswer((_) async => true);
   });
 
   tearDown(() => repository.close());
@@ -102,12 +102,13 @@ void main() {
       expect(find.byType(SyncStatusPill), findsNothing);
     });
 
-    testWidgets('a quantidade acompanha a busca', (tester) async {
+    testWidgets('a quantidade é o total, mesmo buscando', (tester) async {
       await pumpPage(tester);
 
       await search(tester, 'olinda');
 
-      expect(find.text('1 loja'), findsOneWidget);
+      expect(find.text('Pão de Açúcar Boa Viagem'), findsNothing);
+      expect(find.text('2 lojas'), findsOneWidget);
     });
   });
 
@@ -233,7 +234,6 @@ void main() {
 
       expect(find.text('Carrefour Água Fria'), findsOneWidget);
       expect(find.text('Pão de Açúcar Boa Viagem'), findsNothing);
-      expect(find.text('1 loja'), findsOneWidget);
     });
 
     testWidgets('chip Preventivas filtra as lojas', (tester) async {
@@ -290,6 +290,24 @@ void main() {
       verify(syncService.sync).called(1);
       expect(find.byType(SnackBar), findsNothing);
       expect(find.text('Sincronizado'), findsOneWidget);
+    });
+
+    testWidgets('sem sincronização real, puxar não mostra o selo', (
+      tester,
+    ) async {
+      when(syncService.sync).thenAnswer((_) async => false);
+      await pumpPage(tester);
+
+      await tester.fling(
+        find.byType(ListView).last,
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      verify(syncService.sync).called(1);
+      expect(find.byType(SyncStatusPill), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
     });
 
     testWidgets('falha offline avisa, mantém a lista e troca o selo', (

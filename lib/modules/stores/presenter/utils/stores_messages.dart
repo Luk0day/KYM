@@ -1,5 +1,5 @@
 import '../../domain/entities/store_filter.dart';
-import '../../domain/services/sync_service.dart';
+import '../../domain/services/store_sync_trigger.dart';
 import '../controllers/stores_controller.dart';
 
 const String storesLoadErrorMessage = 'Não foi possível carregar as lojas.';

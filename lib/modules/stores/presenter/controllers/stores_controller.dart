@@ -6,7 +6,7 @@ import '../../../auth/presenter/controllers/session_controller.dart';
 import '../../domain/entities/store_filter.dart';
 import '../../domain/entities/store_list_result.dart';
 import '../../domain/entities/store_summary.dart';
-import '../../domain/services/sync_service.dart';
+import '../../domain/services/store_sync_trigger.dart';
 import '../../domain/usecases/filter_stores.dart';
 import '../../domain/usecases/refresh_stores.dart';
 import '../../domain/usecases/watch_stores.dart';
@@ -16,7 +16,7 @@ enum StoresStatus { loading, ready, error }
 
 /// Estado da sincronização mostrado no selo do topo da tela. Começa em
 /// [unknown] (selo escondido): a tela não sabe se os dados locais estão em dia
-/// até uma sincronização terminar.
+/// até uma sincronização real terminar.
 enum SyncIndicator { unknown, synced, offline, failed }
 
 class StoresController extends ChangeNotifier {
@@ -97,8 +97,10 @@ class StoresController extends ChangeNotifier {
     _syncMessage = null;
 
     try {
-      await _refreshStores();
-      _syncIndicator = SyncIndicator.synced;
+      // Sem sincronização real, o selo continua como estava (escondido).
+      if (await _refreshStores()) {
+        _syncIndicator = SyncIndicator.synced;
+      }
       notifyListeners();
       return true;
     } on SyncFailure catch (failure) {

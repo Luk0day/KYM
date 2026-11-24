@@ -104,7 +104,8 @@ class _StoresPageState extends State<StoresPage> {
                 if (ready) ...[
                   const SizedBox(height: 2),
                   Text(
-                    storeCountLabel(_controller.result.items.length),
+                    // O total do perfil, não o resultado da busca (Figma).
+                    storeCountLabel(_controller.result.totalVisible),
                     style: AppTextStyles.metadata,
                   ),
                 ],

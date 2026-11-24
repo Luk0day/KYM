@@ -250,13 +250,33 @@ void main() {
       expect(stores.single.overdueOrders, 0);
     });
 
-    test('ordem vira atrasada com a passagem do tempo, sem mudar o banco', (
-    ) async {
-      var clock = DateTime(2026, 11, 16, 12);
+    test('ordem agendada para hoje só fica atrasada no dia seguinte', () async {
+      await insertStore('s1');
+      await insertEquipment('s1');
+      // `scheduled_for` é uma data: chega com o horário zerado.
+      await insertOrder(
+        'hoje',
+        's1',
+        OrderStatus.agendada,
+        scheduledFor: DateTime(2026, 11, 16),
+      );
+      await insertOrder(
+        'ontem',
+        's1',
+        OrderStatus.agendada,
+        scheduledFor: DateTime(2026, 11, 15),
+      );
+
+      // `now` é 16/11 ao meio-dia: só a de ontem está atrasada.
+      expect((await dataSource.watchStores().first).single.overdueOrders, 1);
+    });
+
+    test('ordem vira atrasada na virada do dia, sem mudar o banco', () async {
+      var clock = DateTime(2026, 11, 16, 23, 59);
       final ticking = DriftStoreLocalDataSource.withClock(
         db,
         () => clock,
-        recountEvery: const Duration(milliseconds: 20),
+        dayCheckEvery: const Duration(milliseconds: 20),
       );
       await insertStore('s1');
       await insertEquipment('s1');
@@ -264,7 +284,7 @@ void main() {
         'o1',
         's1',
         OrderStatus.agendada,
-        scheduledFor: DateTime(2026, 11, 16, 14),
+        scheduledFor: DateTime(2026, 11, 16),
       );
 
       final emissions = <int>[];
@@ -274,20 +294,39 @@ void main() {
       await pumpEventQueue();
       expect(emissions, [0]);
 
-      clock = DateTime(2026, 11, 16, 15);
+      clock = DateTime(2026, 11, 17, 0, 1);
       await Future<void>.delayed(const Duration(milliseconds: 80));
       await subscription.cancel();
 
-      expect(emissions.first, 0);
-      expect(emissions.last, 1);
+      expect(emissions, [0, 1]);
     });
 
-    test('cancelar a assinatura para a recontagem', () async {
+    test('não refaz a consulta enquanto o dia não muda', () async {
+      var clock = DateTime(2026, 11, 16, 8);
+      final ticking = DriftStoreLocalDataSource.withClock(
+        db,
+        () => clock,
+        dayCheckEvery: const Duration(milliseconds: 10),
+      );
+      await insertStore('s1');
+
+      var emissions = 0;
+      final subscription = ticking.watchStores().listen((_) => emissions++);
+      await pumpEventQueue();
+
+      clock = DateTime(2026, 11, 16, 18);
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      await subscription.cancel();
+
+      expect(emissions, 1);
+    });
+
+    test('cancelar a assinatura para a conferência do dia', () async {
       var reads = 0;
       final ticking = DriftStoreLocalDataSource.withClock(db, () {
         reads++;
         return now;
-      }, recountEvery: const Duration(milliseconds: 10));
+      }, dayCheckEvery: const Duration(milliseconds: 10));
 
       final subscription = ticking.watchStores().listen((_) {});
       await pumpEventQueue();

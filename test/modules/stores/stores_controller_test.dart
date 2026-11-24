@@ -3,7 +3,8 @@ import 'package:kym/modules/auth/domain/entities/user_role.dart';
 import 'package:kym/modules/stores/domain/entities/store_filter.dart';
 import 'package:kym/modules/stores/domain/entities/store_summary.dart';
 import 'package:kym/modules/stores/domain/repositories/store_list_repository.dart';
-import 'package:kym/modules/stores/domain/services/sync_service.dart';
+import 'package:kym/modules/stores/domain/services/store_sync_trigger.dart';
+import 'package:kym/modules/stores/infra/services/noop_store_sync_trigger.dart';
 import 'package:kym/modules/stores/domain/usecases/filter_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/refresh_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/watch_stores.dart';
@@ -13,13 +14,13 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../support/store_fakes.dart';
 
-class MockSyncService extends Mock implements SyncService {}
+class MockStoreSyncTrigger extends Mock implements StoreSyncTrigger {}
 
 class MockStoreListRepository extends Mock implements StoreListRepository {}
 
 void main() {
   late FakeStoreListRepository repository;
-  late MockSyncService syncService;
+  late MockStoreSyncTrigger syncService;
 
   StoresController build({UserRole role = UserRole.tecnico}) {
     return StoresController(
@@ -42,8 +43,8 @@ void main() {
 
   setUp(() {
     repository = FakeStoreListRepository(sampleStores);
-    syncService = MockSyncService();
-    when(syncService.sync).thenAnswer((_) async {});
+    syncService = MockStoreSyncTrigger();
+    when(syncService.sync).thenAnswer((_) async => true);
   });
 
   tearDown(() => repository.close());
@@ -222,6 +223,20 @@ void main() {
       verify(syncService.sync).called(1);
     });
 
+    test('sem sincronização real, o selo continua escondido', () async {
+      when(syncService.sync).thenAnswer((_) async => false);
+      final controller = build();
+      addTearDown(controller.dispose);
+
+      expect(await controller.refresh(), isTrue);
+      expect(controller.syncMessage, isNull);
+      expect(controller.syncIndicator, SyncIndicator.unknown);
+    });
+
+    test('o serviço provisório avisa que não sincronizou', () async {
+      expect(await NoopStoreSyncTrigger().sync(), isFalse);
+    });
+
     for (final entry in {
       SyncFailureType.offline: SyncFailureType.offline.userMessage,
       SyncFailureType.server: SyncFailureType.server.userMessage,
@@ -260,7 +275,7 @@ void main() {
       await controller.refresh();
       expect(controller.syncIndicator, SyncIndicator.offline);
 
-      when(syncService.sync).thenAnswer((_) async {});
+      when(syncService.sync).thenAnswer((_) async => true);
       await controller.refresh();
 
       expect(controller.syncMessage, isNull);
