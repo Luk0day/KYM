@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 
 import '../../../../app/database/app_database.dart' as local;
+import '../../domain/entities/agenda_item.dart';
 import '../../domain/entities/maintenance_order.dart';
 import '../../domain/repositories/order_repository.dart';
 
@@ -38,6 +39,21 @@ class OrderRepositoryImpl implements OrderRepository {
       .map((row) => row == null ? null : _toEntity(row));
 
   @override
+  Stream<List<AgendaItem>> watchAgenda({String? assignedTo}) => _db
+      .maintenanceOrdersDao
+      .watchAgenda(assignedTo: assignedTo)
+      .map(
+        (rows) => [
+          for (final row in rows)
+            AgendaItem(
+              order: _toEntity(row.order),
+              equipmentName: row.equipment.name,
+              storeName: row.store.name,
+            ),
+        ],
+      );
+
+  @override
   Future<MaintenanceOrder?> findById(String id) async {
     final row = await _db.maintenanceOrdersDao.findById(id);
     return row == null ? null : _toEntity(row);
@@ -70,6 +86,8 @@ class OrderRepositoryImpl implements OrderRepository {
         operation: local.OutboxOperation.insert,
         entity: local.OutboxEntity.maintenanceOrder,
         entityId: id,
+        // O RLS só aceita a ordem enviada por quem a abriu.
+        userId: order.openedBy,
         // Mesmos nomes de coluna do Postgres, como a sync (B19) espera.
         payload: {
           'id': id,

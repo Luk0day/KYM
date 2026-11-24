@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:kym/modules/equipment/domain/entities/equipment.dart';
 import 'package:kym/modules/equipment/domain/entities/equipment_status.dart';
 import 'package:kym/modules/equipment/domain/repositories/equipment_repository.dart';
+import 'package:kym/modules/orders/domain/entities/agenda_item.dart';
 import 'package:kym/modules/orders/domain/entities/maintenance_order.dart';
 import 'package:kym/modules/orders/domain/repositories/order_repository.dart';
 
@@ -79,6 +80,10 @@ class FakeOrderRepository implements OrderRepository {
   @override
   Future<MaintenanceOrder?> findById(String id) async =>
       items.where((o) => o.id == id).firstOrNull;
+
+  @override
+  Stream<List<AgendaItem>> watchAgenda({String? assignedTo}) =>
+      throw UnimplementedError('watchAgenda não é usado nestes testes');
 
   @override
   Future<MaintenanceOrder> create(NewOrder order) =>

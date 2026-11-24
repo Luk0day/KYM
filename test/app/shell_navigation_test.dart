@@ -40,13 +40,12 @@ Future<void> _pumpApp(
         authDataSourceFactory: () => FakeAuthDataSource(latency: Duration.zero),
         databaseFactory: () => db,
         // O scanner real não roda em teste: a câmera vira um espaço vazio.
-        scannerCameraBuilder:
-            (
-              context, {
-              required active,
-              required onDetect,
-              required onOpenSettings,
-            }) => const SizedBox.expand(),
+        scannerCameraBuilder: (
+          context, {
+          required active,
+          required onDetect,
+          required onOpenSettings,
+        }) => const SizedBox.expand(),
       ),
       child: const KymApp(),
     ),
@@ -142,6 +141,22 @@ void main() {
       expect(find.text('Agenda'), findsNWidgets(2));
       final bar = tester.widget<KymBottomNavBar>(find.byType(KymBottomNavBar));
       expect(bar.selectedIndex, 3);
+    });
+
+    shellTest('tocar na aba aberta não refaz a transição de tela', (
+      tester,
+    ) async {
+      await _pumpApp(tester);
+      await _signIn(tester, 'tecnico@kym.test');
+
+      await tester.tap(find.text('Painel'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Olá, Técnico'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.text('Olá, Técnico'), findsOneWidget);
     });
 
     shellTest('botão central abre o leitor em tela cheia e volta', (

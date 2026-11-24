@@ -128,4 +128,13 @@ class Outbox extends Table {
   IntColumn get attempts => integer().withDefault(const Constant(0))();
   TextColumn get lastError => text().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
+
+  /// Última vez que o item foi enviado (com sucesso ou não). Serve à espera
+  /// crescente entre tentativas e à limpeza dos itens concluídos.
+  DateTimeColumn get lastAttemptAt => dateTime().nullable()();
+
+  /// Usuário que fez a operação. O RLS exige que ele mesmo a envie (por
+  /// exemplo, `opened_by = auth.uid()`), então a sync só manda os itens de
+  /// quem está logado. Nulo nos itens anteriores à v2 do banco.
+  TextColumn get userId => text().nullable()();
 }

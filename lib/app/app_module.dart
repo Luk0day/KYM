@@ -1,6 +1,8 @@
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:uuid/uuid.dart';
 
+import '../modules/agenda/agenda_module.dart';
+import '../modules/agenda/presenter/utils/agenda_clock.dart';
 import '../modules/auth/auth_module.dart';
 import '../modules/auth/infra/datasources/auth_datasource.dart';
 import '../modules/equipment/domain/repositories/equipment_repository.dart';
@@ -21,6 +23,7 @@ import 'database/daos/maintenance_orders_dao.dart';
 import 'database/daos/outbox_dao.dart';
 import 'database/daos/photos_dao.dart';
 import 'database/daos/stores_dao.dart';
+import 'sync/sync_service.dart';
 
 /// As fábricas são injetadas para que testes e o modo fake troquem o Supabase
 /// e o banco (por exemplo `AppDatabase.forTesting(NativeDatabase.memory())`)
@@ -29,17 +32,27 @@ class AppModule extends Module {
   AppModule({
     required this.authDataSourceFactory,
     AppDatabase Function()? databaseFactory,
+    this.agendaClock = const AgendaClock(),
+    this.syncService,
     this.scannerCameraBuilder,
   }) : databaseFactory = databaseFactory ?? AppDatabase.new;
 
   final AuthDataSource Function() authDataSourceFactory;
   final AppDatabase Function() databaseFactory;
+  final AgendaClock agendaClock;
+
+  /// Processador da outbox (B19). Criado no `main` junto do banco para ser
+  /// ligado logo na abertura do app; nulo no modo fake, que não sincroniza.
+  final SyncService? syncService;
 
   /// Troca a câmera do leitor de QR nos testes; em produção fica nulo.
   final ScannerCameraBuilder? scannerCameraBuilder;
 
   @override
   void register(ModularContext c) {
+    final sync = syncService;
+    if (sync != null) c.addInstance<SyncService>(sync);
+
     c
       // Banco local: um só para o app todo. Lazy, então só abre quando alguém
       // pedir.
@@ -64,6 +77,7 @@ class AppModule extends Module {
           authenticatedRoute: HomeRoutes.root,
         ),
       )
+      ..module(AgendaModule(clock: agendaClock))
       ..module(HomeModule())
       ..module(EquipmentModule())
       ..module(StoresModule())
