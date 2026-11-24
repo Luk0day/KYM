@@ -1,3 +1,4 @@
+import '../../domain/entities/password_recovery_event.dart';
 import '../models/auth_user_model.dart';
 
 abstract interface class AuthDataSource {
@@ -17,4 +18,8 @@ abstract interface class AuthDataSource {
   Future<void> signOut();
 
   Future<void> sendPasswordResetEmail({required String email});
+
+  Future<void> updatePassword({required String password});
+
+  Stream<PasswordRecoveryEvent> get passwordRecoveryEvents;
 }

@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import '../../../../app/storage/key_value_store.dart';
 import '../../../../app/storage/storage_keys.dart';
+import '../../domain/entities/password_recovery_event.dart';
+import '../../domain/entities/password_policy.dart';
 import '../../domain/errors/auth_failure.dart';
 import '../models/auth_user_model.dart';
 import 'auth_datasource.dart';
@@ -62,6 +66,55 @@ class FakeAuthDataSource implements AuthDataSource {
 
   AuthUserModel? _currentUser;
 
+  final Map<String, String> _changedPasswords = {};
+  final StreamController<PasswordRecoveryEvent> _recoveryEvents =
+      StreamController<PasswordRecoveryEvent>.broadcast();
+  FakeAuthAccount? _recoveryAccount;
+
+  String _passwordOf(FakeAuthAccount account) =>
+      _changedPasswords[account.id] ?? account.password;
+
+  /// Simula o toque no link do e-mail: um link válido abre a sessão de
+  /// recuperação da conta de [email]; um link expirado só emite linkInvalid.
+  void simulatePasswordRecoveryLink({
+    required String email,
+    bool expired = false,
+  }) {
+    if (expired) {
+      _recoveryEvents.add(PasswordRecoveryEvent.linkInvalid);
+      return;
+    }
+    final account = _accounts.firstWhere(
+      (item) => item.email.toLowerCase() == email.trim().toLowerCase(),
+    );
+    _recoveryAccount = account;
+    _currentUser = _toModel(account);
+    _recoveryEvents.add(PasswordRecoveryEvent.started);
+  }
+
+  @override
+  Stream<PasswordRecoveryEvent> get passwordRecoveryEvents =>
+      _recoveryEvents.stream;
+
+  @override
+  Future<void> updatePassword({required String password}) async {
+    await _simulateLatency();
+    _throwIfFailureScheduled();
+
+    final account = _recoveryAccount;
+    if (account == null) {
+      throw const AuthFailure(AuthFailureType.recoveryLinkInvalid);
+    }
+    if (password.length < PasswordPolicy.minLength) {
+      throw const AuthFailure(AuthFailureType.weakPassword);
+    }
+    if (password == _passwordOf(account)) {
+      throw const AuthFailure(AuthFailureType.samePassword);
+    }
+
+    _changedPasswords[account.id] = password;
+  }
+
   @override
   Future<AuthUserModel> signInWithEmail({
     required String email,
@@ -75,7 +128,7 @@ class FakeAuthDataSource implements AuthDataSource {
         .where((item) => item.email.toLowerCase() == normalizedEmail)
         .firstOrNull;
 
-    if (account == null || account.password != password) {
+    if (account == null || _passwordOf(account) != password) {
       throw const AuthFailure(AuthFailureType.invalidCredentials);
     }
 
@@ -112,6 +165,7 @@ class FakeAuthDataSource implements AuthDataSource {
   Future<void> signOut() async {
     await _simulateLatency();
     _currentUser = null;
+    _recoveryAccount = null;
     await _sessionStore.delete(StorageKeys.fakeSessionUserId);
   }
 
