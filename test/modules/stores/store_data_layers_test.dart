@@ -250,6 +250,55 @@ void main() {
       expect(stores.single.overdueOrders, 0);
     });
 
+    test('ordem vira atrasada com a passagem do tempo, sem mudar o banco', (
+    ) async {
+      var clock = DateTime(2026, 11, 16, 12);
+      final ticking = DriftStoreLocalDataSource.withClock(
+        db,
+        () => clock,
+        recountEvery: const Duration(milliseconds: 20),
+      );
+      await insertStore('s1');
+      await insertEquipment('s1');
+      await insertOrder(
+        'o1',
+        's1',
+        OrderStatus.agendada,
+        scheduledFor: DateTime(2026, 11, 16, 14),
+      );
+
+      final emissions = <int>[];
+      final subscription = ticking.watchStores().listen(
+        (stores) => emissions.add(stores.single.overdueOrders),
+      );
+      await pumpEventQueue();
+      expect(emissions, [0]);
+
+      clock = DateTime(2026, 11, 16, 15);
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await subscription.cancel();
+
+      expect(emissions.first, 0);
+      expect(emissions.last, 1);
+    });
+
+    test('cancelar a assinatura para a recontagem', () async {
+      var reads = 0;
+      final ticking = DriftStoreLocalDataSource.withClock(db, () {
+        reads++;
+        return now;
+      }, recountEvery: const Duration(milliseconds: 10));
+
+      final subscription = ticking.watchStores().listen((_) {});
+      await pumpEventQueue();
+      await subscription.cancel();
+      final readsAtCancel = reads;
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(reads, readsAtCancel);
+    });
+
     test('reemite quando uma ordem muda', () async {
       await insertStore('s1');
       await insertEquipment('s1');
