@@ -333,5 +333,61 @@ void main() {
       expect(events, [PasswordRecoveryEvent.linkInvalid]);
       await subscription.cancel();
     });
+
+    test('link aberto em outro aparelho também vira linkInvalid', () async {
+      final events = <PasswordRecoveryEvent>[];
+      final subscription = dataSource.passwordRecoveryEvents.listen(events.add);
+
+      authStates
+        ..addError(
+          AuthException('invalid flow state', code: 'flow_state_not_found'),
+        )
+        ..addError(
+          const AuthPKCEGrantCodeExchangeError(
+            'Code verifier could not be found in local storage.',
+          ),
+        );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, [
+        PasswordRecoveryEvent.linkInvalid,
+        PasswordRecoveryEvent.linkInvalid,
+      ]);
+      await subscription.cancel();
+    });
+
+    test('renovação do token sem internet não vira linkInvalid', () async {
+      final events = <PasswordRecoveryEvent>[];
+      final subscription = dataSource.passwordRecoveryEvents.listen(events.add);
+
+      authStates
+        ..addError(AuthRetryableFetchException(message: 'SocketException'))
+        ..addError(
+          AuthRetryableFetchException(message: 'gateway', statusCode: '503'),
+        );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, isEmpty);
+      await subscription.cancel();
+    });
+
+    test('sessão vencida ao restaurar não vira linkInvalid', () async {
+      final events = <PasswordRecoveryEvent>[];
+      final subscription = dataSource.passwordRecoveryEvents.listen(events.add);
+
+      authStates
+        ..addError(AuthException('Session expired.', code: 'session_expired'))
+        ..addError(
+          AuthException(
+            'Initial session is missing data.',
+            code: 'session_not_found',
+          ),
+        )
+        ..addError(AuthException('Invalid Refresh Token', statusCode: '400'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, isEmpty);
+      await subscription.cancel();
+    });
   });
 }
