@@ -21,6 +21,7 @@ import 'database/daos/maintenance_orders_dao.dart';
 import 'database/daos/outbox_dao.dart';
 import 'database/daos/photos_dao.dart';
 import 'database/daos/stores_dao.dart';
+import 'storage/key_value_store.dart';
 import 'sync/sync_service.dart';
 
 /// As fábricas são injetadas para que testes e o modo fake troquem o Supabase
@@ -33,6 +34,7 @@ class AppModule extends Module {
     this.agendaClock = const AgendaClock(),
     this.syncService,
     this.scannerCameraBuilder,
+    this.recoveryStoreFactory,
   }) : databaseFactory = databaseFactory ?? AppDatabase.new;
 
   final AuthDataSource Function() authDataSourceFactory;
@@ -45,6 +47,9 @@ class AppModule extends Module {
 
   /// Troca a câmera do leitor de QR nos testes; em produção fica nulo.
   final ScannerCameraBuilder? scannerCameraBuilder;
+
+  /// Guarda a marca de recuperação de senha em andamento (B56).
+  final KeyValueStore Function()? recoveryStoreFactory;
 
   @override
   void register(ModularContext c) {
@@ -73,6 +78,7 @@ class AppModule extends Module {
         AuthModule(
           dataSourceFactory: authDataSourceFactory,
           authenticatedRoute: HomeRoutes.root,
+          recoveryStoreFactory: recoveryStoreFactory,
         ),
       )
       ..module(AgendaModule(clock: agendaClock))

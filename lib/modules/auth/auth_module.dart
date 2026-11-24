@@ -1,5 +1,6 @@
 import 'package:flutter_modular/flutter_modular.dart';
 
+import '../../app/storage/key_value_store.dart';
 import 'auth_routes.dart';
 import 'domain/errors/auth_failure.dart';
 import 'domain/repositories/auth_repository.dart';
@@ -32,16 +33,26 @@ class AuthModule extends Module {
   AuthModule({
     required this.dataSourceFactory,
     required this.authenticatedRoute,
+    this.recoveryStoreFactory,
   });
 
   final AuthDataSource Function() dataSourceFactory;
   final String authenticatedRoute;
 
+  /// Onde fica a marca de recuperação de senha em andamento. Sem ela, a marca
+  /// vive só na memória (testes).
+  final KeyValueStore Function()? recoveryStoreFactory;
+
   @override
   void register(ModularContext c) {
     c
       ..addLazySingleton<AuthDataSource>(dataSourceFactory)
-      ..addLazySingleton<AuthRepository>(AuthRepositoryImpl.new)
+      ..addLazySingleton<AuthRepository>(
+        (AuthDataSource dataSource) => AuthRepositoryImpl(
+          dataSource,
+          recoveryStore: recoveryStoreFactory?.call(),
+        ),
+      )
       ..addLazySingleton<SignInWithEmail>(SignInWithEmail.new)
       ..addLazySingleton<SignInWithGoogle>(SignInWithGoogle.new)
       ..addLazySingleton<GetCurrentUser>(GetCurrentUser.new)

@@ -11,6 +11,7 @@ import 'app/database/seed/fake_data_seeder.dart';
 import 'app/di/auth_data_source_factory.dart';
 import 'app/di/session_storage_factory.dart';
 import 'app/di/sync_service_factory.dart';
+import 'app/storage/secure_key_value_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,7 @@ Future<void> main() async {
         authDataSourceFactory: createAuthDataSource,
         databaseFactory: () => database,
         syncService: syncService,
+        recoveryStoreFactory: SecureKeyValueStore.new,
       ),
       child: const KymApp(),
     ),
