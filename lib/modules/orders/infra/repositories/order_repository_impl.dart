@@ -70,6 +70,8 @@ class OrderRepositoryImpl implements OrderRepository {
         operation: local.OutboxOperation.insert,
         entity: local.OutboxEntity.maintenanceOrder,
         entityId: id,
+        // O RLS só aceita a ordem enviada por quem a abriu.
+        userId: order.openedBy,
         // Mesmos nomes de coluna do Postgres, como a sync (B19) espera.
         payload: {
           'id': id,

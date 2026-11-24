@@ -25,7 +25,8 @@ class SupabaseRemoteSyncDataSource implements RemoteSyncDataSource {
   };
 
   @override
-  Future<bool> hasSession() async => _client.auth.currentSession != null;
+  Future<String?> currentUserId() async =>
+      _client.auth.currentSession?.user.id;
 
   @override
   Stream<void> get sessionReady => _client.auth.onAuthStateChange

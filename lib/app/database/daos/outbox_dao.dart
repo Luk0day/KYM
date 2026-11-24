@@ -20,12 +20,14 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
     OutboxStatus.failed,
   ];
 
-  /// Enfileira uma operação e devolve o id do item.
+  /// Enfileira uma operação e devolve o id do item. [userId] é quem fez a
+  /// operação: só com ele logado o item é enviado.
   Future<int> enqueue({
     required OutboxOperation operation,
     required OutboxEntity entity,
     required String entityId,
     required Map<String, Object?> payload,
+    required String? userId,
   }) =>
       into(outbox).insert(
         OutboxCompanion.insert(
@@ -33,6 +35,7 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
           entity: entity,
           entityId: entityId,
           payload: jsonEncode(payload),
+          userId: Value(userId),
         ),
       );
 
@@ -199,8 +202,9 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
     };
   }
 
+  /// Pelo id (autoincremento), não pelo `createdAt`: o relógio do aparelho
+  /// pode voltar, e um update passaria na frente do insert do mesmo registro.
   static List<OrderClauseGenerator<$OutboxTable>> get _creationOrder => [
-        (o) => OrderingTerm.asc(o.createdAt),
         (o) => OrderingTerm.asc(o.id),
       ];
 

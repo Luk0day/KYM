@@ -44,8 +44,10 @@ class AppDatabase extends _$AppDatabase {
           //     await m.createTable(novaTabela);
           //   }
           if (from < 2) {
-            // B19: espera entre tentativas e limpeza da outbox.
+            // B19: espera entre tentativas, limpeza e dono de cada item da
+            // outbox.
             await m.addColumn(outbox, outbox.lastAttemptAt);
+            await m.addColumn(outbox, outbox.userId);
           }
         },
         beforeOpen: (details) async {
