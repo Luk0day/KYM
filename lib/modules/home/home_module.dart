@@ -14,10 +14,7 @@ import '../auth/domain/entities/user_role_permissions.dart';
 import '../auth/presenter/controllers/session_controller.dart';
 import '../auth/presenter/guards/role_guard.dart';
 import '../auth/presenter/utils/user_role_label.dart';
-import '../equipment/presenter/controllers/equipment_list_controller.dart';
-import '../stores/presenter/controllers/store_detail_controller.dart';
 import '../stores/presenter/controllers/stores_controller.dart';
-import '../stores/presenter/pages/store_detail_page.dart';
 import '../stores/presenter/pages/stores_page.dart';
 import 'home_routes.dart';
 import 'presenter/pages/shell_page.dart';
@@ -53,108 +50,84 @@ class HomeModule extends Module {
 
   @override
   void register(ModularContext c) {
-    c
-      // Detalhe da loja (B26): por cima da casca, com voltar.
-      ..route(
-        HomeRoutes.lojaPath,
-        guards: [_guard(AppDestination.lojas)],
-        provide: (scoped) {
-          scoped
-            ..addChangeNotifier<StoreDetailController>(
-              StoreDetailController.new,
-            )
-            ..addChangeNotifier<EquipmentListController>(
-              EquipmentListController.new,
+    c.route(
+      '/',
+      guards: [_shellGuard],
+      child: (context, _) => ShellPage(session: inject<SessionController>()),
+      children: (c) => c
+        ..route(
+          HomeRoutes.painelPath,
+          guards: [_guard(AppDestination.painel)],
+          child: (context, _) {
+            final user = inject<SessionController>().user;
+            final name = user?.displayName ?? user?.email ?? '';
+            return TabPlaceholderPage(
+              title: 'Olá, ${name.split(' ').first}',
+              subtitle: user?.role.label,
             );
-        },
-        child: (context, state) => StoreDetailPage(
-          storeId: state.params['id']!,
-          controller: context.read<StoreDetailController>(),
-          equipmentController: context.read<EquipmentListController>(),
-          canCheckIn: _currentRole()?.canCheckIn ?? false,
-          onBack: () => context.pop(),
-          // TODO(B28): abrir o detalhe do equipamento.
-          onEquipmentSelected: (_) {},
-        ),
-      )
-      ..route(
-        '/',
-        guards: [_shellGuard],
-        child: (context, _) => ShellPage(session: inject<SessionController>()),
-        children: (c) => c
-          ..route(
-            HomeRoutes.painelPath,
-            guards: [_guard(AppDestination.painel)],
-            child: (context, _) {
-              final user = inject<SessionController>().user;
-              final name = user?.displayName ?? user?.email ?? '';
-              return TabPlaceholderPage(
-                title: 'Olá, ${name.split(' ').first}',
-                subtitle: user?.role.label,
-              );
-            },
-          )
-          ..route(
-            HomeRoutes.lojasPath,
-            guards: [_guard(AppDestination.lojas)],
-            // O controller vive só enquanto a aba estiver aberta.
-            provide: (scoped) {
-              scoped.addChangeNotifier<StoresController>(StoresController.new);
-            },
-            child: (context, _) => StoresPage(
-              controller: context.read<StoresController>(),
-              onStoreSelected: (store) =>
-                  context.pushNamed(HomeRoutes.loja(store.id)),
-            ),
-          )
-          ..route(
-            HomeRoutes.agendaPath,
-            guards: [_guard(AppDestination.agenda)],
-            provide: (scoped) {
-              scoped.addChangeNotifier<AgendaController>(
-                (
-                  WatchAgenda watch,
-                  BuildAgenda build,
-                  AgendaFilterMemory memory,
-                  AgendaClock clock,
-                ) => AgendaController(
-                  watch,
-                  build,
-                  memory,
-                  _currentUser(),
-                  clock: clock.now,
-                ),
-              );
-            },
-            child: (context, _) => const AgendaPage(),
-          )
-          ..route(
-            HomeRoutes.qrCodesPath,
-            guards: [_guard(AppDestination.qrCodes)],
-            child: (context, _) => const TabPlaceholderPage(
-              title: 'QR Codes',
-              subtitle: 'Gere e imprima as etiquetas para campo',
-            ),
-          )
-          ..route(
-            HomeRoutes.perfilPath,
-            guards: [_guard(AppDestination.perfil)],
-            child: (context, _) => TabPlaceholderPage(
-              title: 'Perfil',
-              subtitle: 'Configurações operacionais e conta',
-              children: [
-                KymButton(
-                  label: 'Sair da conta',
-                  variant: KymButtonVariant.soft,
-                  leading: const Icon(Icons.logout_rounded, size: 20),
-                  onPressed: () async {
-                    await inject<SessionController>().signOut();
-                    if (context.mounted) context.navigate(AuthRoutes.login);
-                  },
-                ),
-              ],
-            ),
+          },
+        )
+        ..route(
+          HomeRoutes.lojasPath,
+          guards: [_guard(AppDestination.lojas)],
+          // O controller vive só enquanto a aba estiver aberta.
+          provide: (scoped) {
+            scoped.addChangeNotifier<StoresController>(StoresController.new);
+          },
+          child: (context, _) => StoresPage(
+            controller: context.read<StoresController>(),
+            // TODO(B26): abrir os detalhes da loja.
+            onStoreSelected: (_) {},
           ),
-      );
+        )
+        ..route(
+          HomeRoutes.agendaPath,
+          guards: [_guard(AppDestination.agenda)],
+          provide: (scoped) {
+            scoped.addChangeNotifier<AgendaController>(
+              (
+                WatchAgenda watch,
+                BuildAgenda build,
+                AgendaFilterMemory memory,
+                AgendaClock clock,
+              ) => AgendaController(
+                watch,
+                build,
+                memory,
+                _currentUser(),
+                clock: clock.now,
+              ),
+            );
+          },
+          child: (context, _) => const AgendaPage(),
+        )
+        ..route(
+          HomeRoutes.qrCodesPath,
+          guards: [_guard(AppDestination.qrCodes)],
+          child: (context, _) => const TabPlaceholderPage(
+            title: 'QR Codes',
+            subtitle: 'Gere e imprima as etiquetas para campo',
+          ),
+        )
+        ..route(
+          HomeRoutes.perfilPath,
+          guards: [_guard(AppDestination.perfil)],
+          child: (context, _) => TabPlaceholderPage(
+            title: 'Perfil',
+            subtitle: 'Configurações operacionais e conta',
+            children: [
+              KymButton(
+                label: 'Sair da conta',
+                variant: KymButtonVariant.soft,
+                leading: const Icon(Icons.logout_rounded, size: 20),
+                onPressed: () async {
+                  await inject<SessionController>().signOut();
+                  if (context.mounted) context.navigate(AuthRoutes.login);
+                },
+              ),
+            ],
+          ),
+        ),
+    );
   }
 }
