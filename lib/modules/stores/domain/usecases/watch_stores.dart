@@ -1,58 +1,32 @@
-import '../entities/store_filter.dart';
-import '../entities/store_list_result.dart';
+import '../../../auth/domain/entities/user_role.dart';
+import '../../../auth/domain/entities/user_role_permissions.dart';
 import '../entities/store_summary.dart';
 import '../repositories/store_list_repository.dart';
 import '../utils/text_normalizer.dart';
 
+/// Lojas que o perfil enxerga, em ordem alfabética. A busca e as abas de filtro
+/// ficam no `FilterStores`, em memória, para não refazer a consulta ao banco a
+/// cada tecla.
 class WatchStores {
   WatchStores(this._repository);
 
   final StoreListRepository _repository;
 
-  /// Lojas inativas só aparecem quando [includeInactive] é verdadeiro
-  /// (gestor). A busca ignora maiúsculas e acentos e olha nome, código,
-  /// cidade e endereço.
-  Stream<StoreListResult> call({
-    StoreFilter filter = const StoreFilter(),
-    bool includeInactive = false,
-  }) {
-    final query = TextNormalizer.normalize(filter.query);
+  /// Lojas inativas só aparecem para quem pode vê-las (gestor). Sem perfil,
+  /// ficam escondidas. A ordem ignora maiúsculas e acentos.
+  Stream<List<StoreSummary>> call({required UserRole? role}) {
+    final includeInactive = role?.canViewInactiveStores ?? false;
 
-    return _repository.watchStores().map((stores) {
-      final visible =
+    return _repository.watchStores().map(
+      (stores) =>
           stores.where((store) => includeInactive || store.isActive).toList()
-            ..sort(_byName);
-
-      final items = visible
-          .where((store) => _matches(store, query, filter.kind))
-          .toList();
-
-      return StoreListResult(items: items, totalVisible: visible.length);
-    });
+            ..sort(_byName),
+    );
   }
 
   static int _byName(StoreSummary a, StoreSummary b) {
     final byName = TextNormalizer.normalize(a.name)
         .compareTo(TextNormalizer.normalize(b.name));
     return byName != 0 ? byName : a.id.compareTo(b.id);
-  }
-
-  static bool _matches(StoreSummary store, String query, StoreFilterKind kind) {
-    final matchesKind = switch (kind) {
-      StoreFilterKind.todas => true,
-      StoreFilterKind.comAtrasadas => store.overdueOrders > 0,
-      StoreFilterKind.preventivas => store.preventiveOrders > 0,
-      StoreFilterKind.corretivas => store.correctiveOrders > 0,
-    };
-    if (!matchesKind) {
-      return false;
-    }
-    if (query.isEmpty) {
-      return true;
-    }
-    return [store.name, store.code, store.city, store.address].any(
-      (field) =>
-          field != null && TextNormalizer.normalize(field).contains(query),
-    );
   }
 }

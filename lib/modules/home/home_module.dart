@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 import '../../shared/presenter/widgets/kym_button.dart';
+import '../agenda/domain/usecases/build_agenda.dart';
+import '../agenda/domain/usecases/watch_agenda.dart';
+import '../agenda/presenter/controllers/agenda_controller.dart';
+import '../agenda/presenter/pages/agenda_page.dart';
+import '../agenda/presenter/utils/agenda_clock.dart';
 import '../auth/auth_routes.dart';
+import '../auth/domain/entities/authenticated_user.dart';
 import '../auth/domain/entities/user_role.dart';
 import '../auth/domain/entities/user_role_permissions.dart';
 import '../auth/presenter/controllers/session_controller.dart';
@@ -14,7 +20,6 @@ import '../stores/presenter/controllers/stores_controller.dart';
 import '../stores/presenter/pages/store_detail_page.dart';
 import '../stores/presenter/pages/stores_page.dart';
 import 'home_routes.dart';
-import 'presenter/pages/qr_scanner_placeholder_page.dart';
 import 'presenter/pages/shell_page.dart';
 import 'presenter/pages/tab_placeholder_page.dart';
 
@@ -23,6 +28,8 @@ class HomeModule extends Module {
   String? get path => HomeRoutes.root;
 
   static UserRole? _currentRole() => inject<SessionController>().user?.role;
+
+  static AuthenticatedUser _currentUser() => inject<SessionController>().user!;
 
   static String _initialRoute(UserRole role) =>
       HomeRoutes.of(role.initialDestination);
@@ -47,12 +54,6 @@ class HomeModule extends Module {
   @override
   void register(ModularContext c) {
     c
-      ..route(
-        HomeRoutes.qrPath,
-        guards: [_guard(AppDestination.qr)],
-        child: (context, _) =>
-            QrScannerPlaceholderPage(onBack: () => context.pop()),
-      )
       // Detalhe da loja (B26): por cima da casca, com voltar.
       ..route(
         HomeRoutes.lojaPath,
@@ -109,7 +110,23 @@ class HomeModule extends Module {
           ..route(
             HomeRoutes.agendaPath,
             guards: [_guard(AppDestination.agenda)],
-            child: (context, _) => const TabPlaceholderPage(title: 'Agenda'),
+            provide: (scoped) {
+              scoped.addChangeNotifier<AgendaController>(
+                (
+                  WatchAgenda watch,
+                  BuildAgenda build,
+                  AgendaFilterMemory memory,
+                  AgendaClock clock,
+                ) => AgendaController(
+                  watch,
+                  build,
+                  memory,
+                  _currentUser(),
+                  clock: clock.now,
+                ),
+              );
+            },
+            child: (context, _) => const AgendaPage(),
           )
           ..route(
             HomeRoutes.qrCodesPath,

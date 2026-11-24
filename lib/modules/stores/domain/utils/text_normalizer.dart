@@ -29,9 +29,15 @@ abstract final class TextNormalizer {
 
   static final RegExp _spaces = RegExp(r'\s+');
 
+  /// Acentos soltos (U+0300 a U+036F), de texto decomposto: "e" seguido de "´".
+  static bool _isCombiningMark(int rune) => rune >= 0x0300 && rune <= 0x036F;
+
   static String normalize(String input) {
     final buffer = StringBuffer();
     for (final rune in input.toLowerCase().runes) {
+      if (_isCombiningMark(rune)) {
+        continue;
+      }
       final char = String.fromCharCode(rune);
       buffer.write(_accents[char] ?? char);
     }

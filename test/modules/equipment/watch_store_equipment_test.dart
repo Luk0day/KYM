@@ -66,6 +66,39 @@ void main() {
       expect(b.hasOpenOrder, isFalse);
     });
 
+    test(
+      'ordem de hoje não está atrasada; a de ontem está (regra da B43)',
+      () async {
+        // No Supabase scheduled_for é date: a ordem de hoje chega à meia-noite.
+        final usecase = build(
+          FakeEquipmentRepository([
+            equipmentFixture(id: 'hoje', name: 'Hoje'),
+            equipmentFixture(id: 'ontem', name: 'Ontem'),
+          ]),
+          FakeOrderRepository([
+            orderFixture(
+              id: '1',
+              equipmentId: 'hoje',
+              scheduledFor: DateTime(2026, 11, 17),
+            ),
+            orderFixture(
+              id: '2',
+              equipmentId: 'ontem',
+              scheduledFor: DateTime(2026, 11, 16, 23, 59),
+            ),
+          ]),
+        );
+
+        final items = await usecase('s1').first;
+        final hoje = items.firstWhere((i) => i.equipment.id == 'hoje');
+        final ontem = items.firstWhere((i) => i.equipment.id == 'ontem');
+        expect(hoje.openOrders, 1);
+        expect(hoje.overdueOrders, 0);
+        expect(ontem.overdueOrders, 1);
+        expect(items.first.equipment.id, 'ontem');
+      },
+    );
+
     test('atrasados primeiro, depois por nome', () async {
       final usecase = build(
         FakeEquipmentRepository([
