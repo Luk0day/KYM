@@ -69,5 +69,12 @@ void main() {
         contains('${LoginValidators.minNewPasswordLength}'),
       );
     });
+
+    test('senha fraca não promete uma regra que o app não exige', () {
+      expect(
+        AuthFailureType.weakPassword.passwordUpdateMessage,
+        isNot(contains('letras e números')),
+      );
+    });
   });
 }
