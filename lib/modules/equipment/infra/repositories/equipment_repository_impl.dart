@@ -1,6 +1,7 @@
 import '../../../../app/database/app_database.dart' as local;
 import '../../../../app/database/daos/equipments_dao.dart';
 import '../../domain/entities/equipment.dart';
+import '../../domain/entities/equipment_status.dart';
 import '../../domain/repositories/equipment_repository.dart';
 
 class EquipmentRepositoryImpl implements EquipmentRepository {
@@ -41,9 +42,16 @@ class EquipmentRepositoryImpl implements EquipmentRepository {
     model: row.model,
     serialNumber: row.serialNumber,
     qrToken: row.qrToken,
-    status: row.status,
+    status: _statusFromLocal(row.status),
     installedAt: row.installedAt,
     notes: row.notes,
     createdAt: row.createdAt,
   );
 }
+
+EquipmentStatus _statusFromLocal(local.EquipmentStatus status) =>
+    switch (status) {
+      local.EquipmentStatus.operando => EquipmentStatus.operando,
+      local.EquipmentStatus.emManutencao => EquipmentStatus.emManutencao,
+      local.EquipmentStatus.parado => EquipmentStatus.parado,
+    };

@@ -8,6 +8,7 @@ import 'package:kym/app/database/daos/equipments_dao.dart';
 import 'package:kym/app/database/daos/maintenance_orders_dao.dart';
 import 'package:kym/app/database/daos/outbox_dao.dart';
 import 'package:kym/app/database/daos/stores_dao.dart';
+import 'package:kym/modules/equipment/domain/entities/equipment_status.dart';
 import 'package:kym/modules/equipment/infra/repositories/equipment_repository_impl.dart';
 import 'package:kym/modules/orders/domain/entities/maintenance_order.dart';
 import 'package:kym/modules/orders/infra/repositories/order_repository_impl.dart';
@@ -127,7 +128,9 @@ void main() {
     late MockEquipmentsDao dao;
     late EquipmentRepositoryImpl repo;
 
-    local.Equipment row({String status = 'operando'}) => local.Equipment(
+    local.Equipment row({
+      local.EquipmentStatus status = local.EquipmentStatus.operando,
+    }) => local.Equipment(
       id: 'e1',
       storeId: 's1',
       name: 'Freezer',
@@ -150,19 +153,19 @@ void main() {
 
     test('passa com certeza: lista da loja chega mapeada', () async {
       when(() => dao.watchByStore('s1'))
-          .thenAnswer((_) => Stream.value([row(), row(status: 'parado')]));
+          .thenAnswer((_) => Stream.value([row(), row(status: local.EquipmentStatus.parado)]));
 
       final list = await repo.watchByStore('s1').first;
 
-      expect(list.map((e) => e.status), ['operando', 'parado']);
+      expect(list.map((e) => e.status), [EquipmentStatus.operando, EquipmentStatus.parado]);
       expect(list.first.storeId, 's1');
     });
 
-    test('quase falha: status desconhecido não derruba a leitura', () async {
+    test('quase passa: status em manutenção chega como enum do domínio', () async {
       when(() => dao.findById('e1'))
-          .thenAnswer((_) async => row(status: 'valor_novo_do_servidor'));
+          .thenAnswer((_) async => row(status: local.EquipmentStatus.emManutencao));
 
-      expect((await repo.findById('e1'))?.status, 'valor_novo_do_servidor');
+      expect((await repo.findById('e1'))?.status, EquipmentStatus.emManutencao);
     });
 
     test(

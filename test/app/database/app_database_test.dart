@@ -117,7 +117,7 @@ void main() {
       final equipment = await db.equipmentsDao.findById('eq-1');
       final fromStore1 = await db.equipmentsDao.listByStore('store-1');
 
-      expect(equipment!.status, 'operando');
+      expect(equipment!.status, EquipmentStatus.operando);
       expect(fromStore1.map((e) => e.id), ['eq-1']);
     });
 

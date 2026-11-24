@@ -1,3 +1,5 @@
+import 'equipment_status.dart';
+
 /// Equipamento de uma loja. Dart puro.
 class Equipment {
   const Equipment({
@@ -24,8 +26,8 @@ class Equipment {
   final String? serialNumber;
   final String qrToken;
 
-  /// Texto do banco (`operando`...). A B27 troca por um enum.
-  final String status;
+  /// Situação do equipamento (enum `equipment_status`).
+  final EquipmentStatus status;
   final DateTime? installedAt;
   final String? notes;
   final DateTime createdAt;
