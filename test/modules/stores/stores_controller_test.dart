@@ -3,7 +3,9 @@ import 'package:kym/modules/auth/domain/entities/user_role.dart';
 import 'package:kym/modules/stores/domain/entities/store_filter.dart';
 import 'package:kym/modules/stores/domain/entities/store_summary.dart';
 import 'package:kym/modules/stores/domain/repositories/store_list_repository.dart';
-import 'package:kym/modules/stores/domain/services/sync_service.dart';
+import 'package:kym/modules/stores/domain/services/store_sync_trigger.dart';
+import 'package:kym/modules/stores/infra/services/noop_store_sync_trigger.dart';
+import 'package:kym/modules/stores/domain/usecases/filter_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/refresh_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/watch_stores.dart';
 import 'package:kym/modules/stores/presenter/controllers/stores_controller.dart';
@@ -12,17 +14,18 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../support/store_fakes.dart';
 
-class MockSyncService extends Mock implements SyncService {}
+class MockStoreSyncTrigger extends Mock implements StoreSyncTrigger {}
 
 class MockStoreListRepository extends Mock implements StoreListRepository {}
 
 void main() {
   late FakeStoreListRepository repository;
-  late MockSyncService syncService;
+  late MockStoreSyncTrigger syncService;
 
   StoresController build({UserRole role = UserRole.tecnico}) {
     return StoresController(
       WatchStores(repository),
+      const FilterStores(),
       RefreshStores(syncService),
       sessionFor(role),
     );
@@ -40,8 +43,8 @@ void main() {
 
   setUp(() {
     repository = FakeStoreListRepository(sampleStores);
-    syncService = MockSyncService();
-    when(syncService.sync).thenAnswer((_) async {});
+    syncService = MockStoreSyncTrigger();
+    when(syncService.sync).thenAnswer((_) async => true);
   });
 
   tearDown(() => repository.close());
@@ -133,7 +136,25 @@ void main() {
       expect(ids(controller), ['s2', 's1']);
     });
 
-    test('escolher a aba já ativa não reassina', () async {
+    test('busca, abas e limpar filtram em memória, sem reassinar o banco', (
+    ) async {
+      final controller = build()..load();
+      addTearDown(controller.dispose);
+      await pumpEventQueue();
+
+      controller
+        ..selectKind(StoreFilterKind.preventivas)
+        ..setQuery('pao');
+      await waitDebounce();
+      expect(ids(controller), ['s1']);
+
+      controller.clearAll();
+      expect(ids(controller), ['s2', 's1']);
+
+      expect(repository.subscriptions, 1);
+    });
+
+    test('escolher a aba já ativa não notifica', () async {
       final controller = build()..load();
       addTearDown(controller.dispose);
       await pumpEventQueue();
@@ -165,6 +186,7 @@ void main() {
       );
       final controller = StoresController(
         WatchStores(mock),
+        const FilterStores(),
         RefreshStores(syncService),
         sessionFor(UserRole.tecnico),
       )..load();
@@ -183,6 +205,14 @@ void main() {
   });
 
   group('sincronização', () {
+    test('antes de sincronizar, o estado é desconhecido', () {
+      final controller = build();
+      addTearDown(controller.dispose);
+
+      expect(controller.syncIndicator, SyncIndicator.unknown);
+      expect(SyncIndicator.unknown.label, 'Não sincronizado');
+    });
+
     test('sucesso devolve true e não deixa mensagem', () async {
       final controller = build();
       addTearDown(controller.dispose);
@@ -191,6 +221,20 @@ void main() {
       expect(controller.syncMessage, isNull);
       expect(controller.syncIndicator, SyncIndicator.synced);
       verify(syncService.sync).called(1);
+    });
+
+    test('sem sincronização real, o selo continua escondido', () async {
+      when(syncService.sync).thenAnswer((_) async => false);
+      final controller = build();
+      addTearDown(controller.dispose);
+
+      expect(await controller.refresh(), isTrue);
+      expect(controller.syncMessage, isNull);
+      expect(controller.syncIndicator, SyncIndicator.unknown);
+    });
+
+    test('o serviço provisório avisa que não sincronizou', () async {
+      expect(await NoopStoreSyncTrigger().sync(), isFalse);
     });
 
     for (final entry in {
@@ -231,7 +275,7 @@ void main() {
       await controller.refresh();
       expect(controller.syncIndicator, SyncIndicator.offline);
 
-      when(syncService.sync).thenAnswer((_) async {});
+      when(syncService.sync).thenAnswer((_) async => true);
       await controller.refresh();
 
       expect(controller.syncMessage, isNull);

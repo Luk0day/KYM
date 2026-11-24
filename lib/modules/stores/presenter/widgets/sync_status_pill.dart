@@ -15,6 +15,7 @@ class SyncStatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final (background, foreground) = switch (indicator) {
       SyncIndicator.synced => (AppColors.doneBg, AppColors.doneFg),
+      SyncIndicator.unknown ||
       SyncIndicator.offline => (AppColors.inactive, AppColors.textSecondary),
       SyncIndicator.failed => (AppColors.overdueBg, AppColors.overdueFg),
     };

@@ -1,5 +1,5 @@
-/// Abas de filtro da tela (chips do Figma).
-enum StoreFilterKind { todas, comAtrasadas, preventivas, corretivas }
+/// Abas de filtro da tela (chips do Figma, mais "Em dia"), na ordem exibida.
+enum StoreFilterKind { todas, comAtrasadas, emDia, preventivas, corretivas }
 
 class StoreFilter {
   const StoreFilter({this.query = '', this.kind = StoreFilterKind.todas});

@@ -1,10 +1,11 @@
-import '../services/sync_service.dart';
+import '../services/store_sync_trigger.dart';
 
 class RefreshStores {
-  RefreshStores(this._syncService);
+  RefreshStores(this._sync);
 
-  final SyncService _syncService;
+  final StoreSyncTrigger _sync;
 
-  /// Dispara a sincronização. Lança [SyncFailure] se não der.
-  Future<void> call() => _syncService.sync();
+  /// Dispara a sincronização. Retorna `false` se não houve sincronização
+  /// real. Lança [SyncFailure] se não der.
+  Future<bool> call() => _sync.sync();
 }
