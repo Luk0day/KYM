@@ -8,8 +8,8 @@ jobs:
   quality:
     name: Code Quality and Tests
     runs-on: ubuntu-latest
-    # Uma execução normal leva uns 2 min. Sem limite, um travamento só é
-    # cancelado pelo GitHub depois de 6 h. Cabe as duas tentativas dos testes.
+    # Uma execução normal leva uns 3 min. Sem limite, um travamento só é
+    # cancelado pelo GitHub depois de 6 h. Cabe os testes e a cobertura.
     timeout-minutes: 30
 
     steps:
@@ -39,18 +39,28 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      # Às vezes o flutter_tester cai (segmentation fault) ao fechar um teste
-      # com banco SQLite nativo enquanto a cobertura é coletada, e o
-      # flutter test fica esperando para sempre. Se passar de 10 min (código
-      # 124 do timeout), roda de novo uma vez; falha de teste não repete.
-      - name: Run tests with coverage
-        run: |
-          timeout 10m flutter test --coverage && exit 0 || status=$?
-          if [ "$status" -ne 124 ]; then exit "$status"; fi
-          echo "::warning::flutter test travou; repetindo uma vez"
-          timeout 10m flutter test --coverage
+      # Os testes decidem se o CI passa, e rodam sem cobertura: a coleta de
+      # cobertura às vezes derruba o flutter_tester (segmentation fault) em
+      # testes com SQLite nativo, e aí o flutter test fica esperando para
+      # sempre, mesmo com todos os testes passando.
+      - name: Run tests
+        timeout-minutes: 10
+        run: flutter test
+
+      # A cobertura roda à parte e não reprova o CI: se o flutter_tester cair,
+      # o relatório pode não sair, mas os testes já passaram no passo acima.
+      - name: Collect coverage
+        id: coverage
+        continue-on-error: true
+        timeout-minutes: 12
+        run: timeout 10m flutter test --coverage
+
+      - name: Warn when coverage is missing
+        if: steps.coverage.outcome == 'failure'
+        run: echo "::warning::A coleta de cobertura falhou ou travou; os testes passaram no passo Run tests."
 
       - name: Upload coverage report
+        if: hashFiles('coverage/lcov.info') != ''
         uses: actions/upload-artifact@v4
         with:
           name: coverage-lcov
