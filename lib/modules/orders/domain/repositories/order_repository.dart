@@ -1,3 +1,4 @@
+import '../entities/agenda_item.dart';
 import '../entities/maintenance_order.dart';
 
 /// Lê sempre do banco local; toda gravação vai para o banco local e para a
@@ -11,6 +12,10 @@ abstract class OrderRepository {
   Stream<List<MaintenanceOrder>> watchByEquipment(String equipmentId);
 
   Stream<MaintenanceOrder?> watchById(String id);
+
+  /// Ordens não canceladas com o nome do equipamento e da loja. Com
+  /// [assignedTo], só as atribuídas a essa pessoa.
+  Stream<List<AgendaItem>> watchAgenda({String? assignedTo});
 
   Future<MaintenanceOrder?> findById(String id);
 

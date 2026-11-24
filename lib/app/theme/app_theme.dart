@@ -6,6 +6,7 @@ import 'app_text_styles.dart';
 
 abstract final class AppTheme {
   static const double radius = 14;
+  static const double radiusSmall = 12;
   static const double buttonHeight = 48;
   static const double fieldHeight = 52;
 

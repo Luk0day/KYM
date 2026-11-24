@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 import '../modules/auth/presenter/controllers/password_recovery_controller.dart';
@@ -15,6 +16,9 @@ class KymApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       routerConfig: ModularApp.routerConfigOf(context),
+      locale: const Locale('pt', 'BR'),
+      supportedLocales: const [Locale('pt', 'BR')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       builder: (context, child) => PasswordRecoveryListener(
         controller: inject<PasswordRecoveryController>(),
         child: child ?? const SizedBox.shrink(),
