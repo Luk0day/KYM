@@ -2,6 +2,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 import 'domain/repositories/store_list_repository.dart';
 import 'domain/services/sync_service.dart';
+import 'domain/usecases/filter_stores.dart';
 import 'domain/usecases/refresh_stores.dart';
 import 'domain/usecases/watch_stores.dart';
 import 'external/datasources/drift_store_local_datasource.dart';
@@ -20,6 +21,7 @@ class StoresModule extends Module {
       // TODO(B20): trocar pelo serviço de sincronização real.
       ..addLazySingleton<SyncService>(NoopSyncService.new)
       ..addLazySingleton<WatchStores>(WatchStores.new)
+      ..addLazySingleton<FilterStores>(FilterStores.new)
       ..addLazySingleton<RefreshStores>(RefreshStores.new);
   }
 }

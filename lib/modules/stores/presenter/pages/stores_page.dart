@@ -111,8 +111,13 @@ class _StoresPageState extends State<StoresPage> {
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Flexible(child: SyncStatusPill(indicator: _controller.syncIndicator)),
+          // Sem sincronização concluída, a tela não afirma que está em dia.
+          if (_controller.syncIndicator != SyncIndicator.unknown) ...[
+            const SizedBox(width: 12),
+            Flexible(
+              child: SyncStatusPill(indicator: _controller.syncIndicator),
+            ),
+          ],
         ],
       ),
     );

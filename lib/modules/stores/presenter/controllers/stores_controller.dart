@@ -2,37 +2,47 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../auth/domain/entities/user_role.dart';
 import '../../../auth/presenter/controllers/session_controller.dart';
 import '../../domain/entities/store_filter.dart';
 import '../../domain/entities/store_list_result.dart';
+import '../../domain/entities/store_summary.dart';
 import '../../domain/services/sync_service.dart';
+import '../../domain/usecases/filter_stores.dart';
 import '../../domain/usecases/refresh_stores.dart';
 import '../../domain/usecases/watch_stores.dart';
 import '../utils/stores_messages.dart';
 
 enum StoresStatus { loading, ready, error }
 
-/// Estado da sincronização mostrado no selo do topo da tela.
-enum SyncIndicator { synced, offline, failed }
+/// Estado da sincronização mostrado no selo do topo da tela. Começa em
+/// [unknown] (selo escondido): a tela não sabe se os dados locais estão em dia
+/// até uma sincronização terminar.
+enum SyncIndicator { unknown, synced, offline, failed }
 
 class StoresController extends ChangeNotifier {
-  StoresController(this._watchStores, this._refreshStores, this._session);
+  StoresController(
+    this._watchStores,
+    this._filterStores,
+    this._refreshStores,
+    this._session,
+  );
 
   static const Duration searchDebounce = Duration(milliseconds: 300);
 
   final WatchStores _watchStores;
+  final FilterStores _filterStores;
   final RefreshStores _refreshStores;
   final SessionController _session;
 
   StoresStatus _status = StoresStatus.loading;
+  List<StoreSummary> _visible = const [];
   StoreListResult _result = StoreListResult.empty;
   StoreFilter _filter = const StoreFilter();
-  SyncIndicator _syncIndicator = SyncIndicator.synced;
+  SyncIndicator _syncIndicator = SyncIndicator.unknown;
   String? _syncMessage;
   bool _isRefreshing = false;
   bool _disposed = false;
-  StreamSubscription<StoreListResult>? _subscription;
+  StreamSubscription<List<StoreSummary>>? _subscription;
   Timer? _debounce;
 
   StoresStatus get status => _status;
@@ -40,9 +50,6 @@ class StoresController extends ChangeNotifier {
   StoreFilter get filter => _filter;
   SyncIndicator get syncIndicator => _syncIndicator;
   String? get syncMessage => _syncMessage;
-
-  /// Só o gestor enxerga lojas inativas.
-  bool get includeInactive => _session.user?.role == UserRole.gestor;
 
   /// Começa a observar o banco local. Chamar de novo não faz nada.
   void load() {
@@ -63,7 +70,7 @@ class StoresController extends ChangeNotifier {
     _debounce?.cancel();
     _debounce = Timer(searchDebounce, () {
       _filter = _filter.copyWith(query: query);
-      _subscribe();
+      _applyFilter();
     });
   }
 
@@ -72,13 +79,13 @@ class StoresController extends ChangeNotifier {
       return;
     }
     _filter = _filter.copyWith(kind: kind);
-    _subscribe();
+    _applyFilter();
   }
 
   void clearAll() {
     _debounce?.cancel();
     _filter = const StoreFilter();
-    _subscribe();
+    _applyFilter();
   }
 
   /// Retorna `false` se a sincronização falhou; o motivo fica em [syncMessage].
@@ -110,20 +117,25 @@ class StoresController extends ChangeNotifier {
     return false;
   }
 
+  /// Assina o banco uma vez só; a busca e as abas filtram em memória.
   void _subscribe() {
     _subscription?.cancel();
-    _subscription =
-        _watchStores(filter: _filter, includeInactive: includeInactive).listen(
-          (result) {
-            _result = result;
-            _status = StoresStatus.ready;
-            notifyListeners();
-          },
-          onError: (Object _) {
-            _status = StoresStatus.error;
-            notifyListeners();
-          },
-        );
+    _subscription = _watchStores(role: _session.user?.role).listen(
+      (stores) {
+        _visible = stores;
+        _status = StoresStatus.ready;
+        _applyFilter();
+      },
+      onError: (Object _) {
+        _status = StoresStatus.error;
+        notifyListeners();
+      },
+    );
+  }
+
+  void _applyFilter() {
+    _result = _filterStores(_visible, _filter);
+    notifyListeners();
   }
 
   @override

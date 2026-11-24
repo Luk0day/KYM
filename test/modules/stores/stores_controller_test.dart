@@ -4,6 +4,7 @@ import 'package:kym/modules/stores/domain/entities/store_filter.dart';
 import 'package:kym/modules/stores/domain/entities/store_summary.dart';
 import 'package:kym/modules/stores/domain/repositories/store_list_repository.dart';
 import 'package:kym/modules/stores/domain/services/sync_service.dart';
+import 'package:kym/modules/stores/domain/usecases/filter_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/refresh_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/watch_stores.dart';
 import 'package:kym/modules/stores/presenter/controllers/stores_controller.dart';
@@ -23,6 +24,7 @@ void main() {
   StoresController build({UserRole role = UserRole.tecnico}) {
     return StoresController(
       WatchStores(repository),
+      const FilterStores(),
       RefreshStores(syncService),
       sessionFor(role),
     );
@@ -133,7 +135,25 @@ void main() {
       expect(ids(controller), ['s2', 's1']);
     });
 
-    test('escolher a aba já ativa não reassina', () async {
+    test('busca, abas e limpar filtram em memória, sem reassinar o banco', (
+    ) async {
+      final controller = build()..load();
+      addTearDown(controller.dispose);
+      await pumpEventQueue();
+
+      controller
+        ..selectKind(StoreFilterKind.preventivas)
+        ..setQuery('pao');
+      await waitDebounce();
+      expect(ids(controller), ['s1']);
+
+      controller.clearAll();
+      expect(ids(controller), ['s2', 's1']);
+
+      expect(repository.subscriptions, 1);
+    });
+
+    test('escolher a aba já ativa não notifica', () async {
       final controller = build()..load();
       addTearDown(controller.dispose);
       await pumpEventQueue();
@@ -165,6 +185,7 @@ void main() {
       );
       final controller = StoresController(
         WatchStores(mock),
+        const FilterStores(),
         RefreshStores(syncService),
         sessionFor(UserRole.tecnico),
       )..load();
@@ -183,6 +204,14 @@ void main() {
   });
 
   group('sincronização', () {
+    test('antes de sincronizar, o estado é desconhecido', () {
+      final controller = build();
+      addTearDown(controller.dispose);
+
+      expect(controller.syncIndicator, SyncIndicator.unknown);
+      expect(SyncIndicator.unknown.label, 'Não sincronizado');
+    });
+
     test('sucesso devolve true e não deixa mensagem', () async {
       final controller = build();
       addTearDown(controller.dispose);

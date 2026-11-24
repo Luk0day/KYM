@@ -19,8 +19,12 @@ class FakeStoreListRepository implements StoreListRepository {
   List<StoreSummary> _stores;
   final _changes = StreamController<List<StoreSummary>>.broadcast();
 
+  /// Quantas vezes o banco foi assinado (cada assinatura refaz a consulta).
+  int subscriptions = 0;
+
   @override
   Stream<List<StoreSummary>> watchStores() async* {
+    subscriptions++;
     yield _stores;
     yield* _changes.stream;
   }

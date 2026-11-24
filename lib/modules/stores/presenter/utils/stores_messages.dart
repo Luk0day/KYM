@@ -20,6 +20,8 @@ extension SyncFailureMessage on SyncFailureType {
 extension SyncIndicatorLabel on SyncIndicator {
   String get label {
     switch (this) {
+      case SyncIndicator.unknown:
+        return 'Não sincronizado';
       case SyncIndicator.synced:
         return 'Sincronizado';
       case SyncIndicator.offline:

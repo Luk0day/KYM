@@ -5,6 +5,7 @@ import 'package:kym/modules/auth/domain/entities/user_role.dart';
 import 'package:kym/modules/stores/domain/entities/store_summary.dart';
 import 'package:kym/modules/stores/domain/repositories/store_list_repository.dart';
 import 'package:kym/modules/stores/domain/services/sync_service.dart';
+import 'package:kym/modules/stores/domain/usecases/filter_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/refresh_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/watch_stores.dart';
 import 'package:kym/modules/stores/presenter/controllers/stores_controller.dart';
@@ -12,6 +13,7 @@ import 'package:kym/modules/stores/presenter/pages/stores_page.dart';
 import 'package:kym/modules/stores/presenter/utils/stores_messages.dart';
 import 'package:kym/modules/stores/presenter/widgets/store_filter_chips.dart';
 import 'package:kym/modules/stores/presenter/widgets/store_tile.dart';
+import 'package:kym/modules/stores/presenter/widgets/sync_status_pill.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../support/store_fakes.dart';
@@ -46,6 +48,7 @@ void main() {
 
     final controller = StoresController(
       WatchStores(repo ?? repository),
+      const FilterStores(),
       RefreshStores(syncService),
       sessionFor(role),
     );
@@ -88,14 +91,14 @@ void main() {
   }
 
   group('cabeçalho', () {
-    testWidgets('mostra título, quantidade e selo de sincronização', (
+    testWidgets('mostra título e quantidade, sem selo antes de sincronizar', (
       tester,
     ) async {
       await pumpPage(tester);
 
       expect(find.text('Lojas'), findsOneWidget);
       expect(find.text('2 lojas'), findsOneWidget);
-      expect(find.text('Sincronizado'), findsOneWidget);
+      expect(find.byType(SyncStatusPill), findsNothing);
     });
 
     testWidgets('a quantidade acompanha a busca', (tester) async {
@@ -185,6 +188,13 @@ void main() {
       await pumpPage(tester);
 
       expect(find.bySemanticsLabel('Buscar loja'), findsWidgets);
+
+      // Com texto digitado o placeholder some, mas o campo segue com nome.
+      await search(tester, 'olinda');
+      final node = tester.getSemantics(find.byType(TextFormField));
+      expect(node.label, 'Buscar loja');
+      expect(node.value, 'olinda');
+      expect(node.flagsCollection.isTextField, isTrue);
       handle.dispose();
     });
 
