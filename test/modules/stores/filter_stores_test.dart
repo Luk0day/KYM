@@ -93,6 +93,10 @@ void main() {
       expect(idsOf(StoreFilterKind.comAtrasadas), ['a']);
     });
 
+    test('em dia: só lojas sem nada em aberto, como o selo do cartão', () {
+      expect(idsOf(StoreFilterKind.emDia), ['d']);
+    });
+
     test('preventivas', () {
       expect(idsOf(StoreFilterKind.preventivas), ['a', 'c']);
     });

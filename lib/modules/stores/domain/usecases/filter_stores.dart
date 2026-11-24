@@ -25,6 +25,8 @@ class FilterStores {
     final matchesKind = switch (kind) {
       StoreFilterKind.todas => true,
       StoreFilterKind.comAtrasadas => store.overdueOrders > 0,
+      // Mesmo critério do selo "Em dia" do cartão: nada em aberto.
+      StoreFilterKind.emDia => store.openOrders == 0,
       StoreFilterKind.preventivas => store.preventiveOrders > 0,
       StoreFilterKind.corretivas => store.correctiveOrders > 0,
     };

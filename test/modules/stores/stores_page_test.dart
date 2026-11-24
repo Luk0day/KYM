@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kym/app/theme/app_theme.dart';
 import 'package:kym/modules/auth/domain/entities/user_role.dart';
+import 'package:kym/modules/stores/domain/entities/store_filter.dart';
 import 'package:kym/modules/stores/domain/entities/store_summary.dart';
 import 'package:kym/modules/stores/domain/repositories/store_list_repository.dart';
 import 'package:kym/modules/stores/domain/services/sync_service.dart';
@@ -198,14 +199,41 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('os chips de filtro aparecem e Todas começa marcado', (
+    testWidgets('os chips de filtro aparecem, na ordem, rolando a linha', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      final row = find.descendant(
+        of: find.byType(StoreFilterChips),
+        matching: find.byType(Scrollable),
+      );
+      const labels = [
+        'Todas',
+        'Com atrasadas',
+        'Em dia',
+        'Preventivas',
+        'Corretivas',
+      ];
+
+      // A linha mostra os chips na ordem do enum.
+      expect(StoreFilterKind.values.map((k) => k.label), labels);
+
+      for (final label in labels) {
+        await tester.scrollUntilVisible(find.text(label), 100, scrollable: row);
+        expect(find.text(label), findsOneWidget);
+      }
+    });
+
+    testWidgets('chip Em dia mostra só as lojas sem nada em aberto', (
       tester,
     ) async {
       await pumpPage(tester);
 
-      for (final label in ['Todas', 'Com atrasadas', 'Preventivas']) {
-        expect(find.text(label), findsOneWidget);
-      }
+      await tapChip(tester, 'Em dia');
+
+      expect(find.text('Carrefour Água Fria'), findsOneWidget);
+      expect(find.text('Pão de Açúcar Boa Viagem'), findsNothing);
+      expect(find.text('1 loja'), findsOneWidget);
     });
 
     testWidgets('chip Preventivas filtra as lojas', (tester) async {

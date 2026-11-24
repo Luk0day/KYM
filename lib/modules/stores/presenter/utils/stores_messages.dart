@@ -39,6 +39,8 @@ extension StoreFilterKindLabel on StoreFilterKind {
         return 'Todas';
       case StoreFilterKind.comAtrasadas:
         return 'Com atrasadas';
+      case StoreFilterKind.emDia:
+        return 'Em dia';
       case StoreFilterKind.preventivas:
         return 'Preventivas';
       case StoreFilterKind.corretivas:
