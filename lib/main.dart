@@ -10,6 +10,7 @@ import 'app/database/app_database.dart';
 import 'app/database/seed/fake_data_seeder.dart';
 import 'app/di/auth_data_source_factory.dart';
 import 'app/di/session_storage_factory.dart';
+import 'app/di/sync_service_factory.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,13 +32,20 @@ Future<void> main() async {
     await FakeDataSeeder(database).seedIfEmpty();
   }
 
+  final syncService = createSyncService(database);
+
   runApp(
     ModularApp(
       module: AppModule(
         authDataSourceFactory: createAuthDataSource,
         databaseFactory: () => database,
+        syncService: syncService,
       ),
       child: const KymApp(),
     ),
   );
+
+  // Envia a fila ao abrir o app (se já houver sessão), ao logar e a cada
+  // operação nova.
+  syncService?.start();
 }
