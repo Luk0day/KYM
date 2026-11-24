@@ -4,6 +4,7 @@ import 'domain/repositories/store_list_repository.dart';
 import 'domain/services/store_sync_trigger.dart';
 import 'domain/usecases/filter_stores.dart';
 import 'domain/usecases/refresh_stores.dart';
+import 'domain/usecases/watch_store_detail.dart';
 import 'domain/usecases/watch_stores.dart';
 import 'external/datasources/drift_store_local_datasource.dart';
 import 'infra/datasources/store_local_datasource.dart';
@@ -21,6 +22,7 @@ class StoresModule extends Module {
       // TODO(B20): trocar pelo serviço de sincronização real.
       ..addLazySingleton<StoreSyncTrigger>(NoopStoreSyncTrigger.new)
       ..addLazySingleton<WatchStores>(WatchStores.new)
+      ..addLazySingleton<WatchStoreDetail>(WatchStoreDetail.new)
       ..addLazySingleton<FilterStores>(FilterStores.new)
       ..addLazySingleton<RefreshStores>(RefreshStores.new);
   }
