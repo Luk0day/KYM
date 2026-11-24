@@ -9,16 +9,12 @@ abstract final class HomeRoutes {
   static const String agendaPath = '/agenda';
   static const String qrCodesPath = '/qr-codes';
   static const String perfilPath = '/perfil';
-  static const String lojaPath = '/lojas/:id';
 
   static const String painel = '$root$painelPath';
   static const String lojas = '$root$lojasPath';
   static const String agenda = '$root$agendaPath';
   static const String qrCodes = '$root$qrCodesPath';
   static const String perfil = '$root$perfilPath';
-
-  /// Detalhe da loja, aberto por cima da casca (mesmo modelo do leitor de QR).
-  static String loja(String id) => '$root/lojas/$id';
 
   static String of(AppDestination destination) => switch (destination) {
     AppDestination.painel => painel,

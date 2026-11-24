@@ -46,8 +46,6 @@ dependencies:
   drift: ^2.35.3
   drift_flutter: ^0.3.1
   uuid: ^4.6.0
-  flutter_map: ^8.3.2
-  latlong2: ^0.10.1
   http: ^1.6.0
   mobile_scanner: ^7.3.0
   permission_handler: ^12.0.1

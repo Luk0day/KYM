@@ -71,7 +71,10 @@ class KymButton extends StatelessWidget {
     return SizedBox(
       width: 20,
       height: 20,
-      child: CircularProgressIndicator(strokeWidth: 2, color: _spinnerColor),
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: _spinnerColor,
+      ),
     );
   }
 
