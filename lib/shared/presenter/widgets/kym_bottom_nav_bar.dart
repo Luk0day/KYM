@@ -62,6 +62,9 @@ class KymBottomNavBar extends StatelessWidget {
             child: SizedBox(
               height: overhang + height,
               child: Row(
+                // Sem o stretch o item de destaque encolhe para a altura do
+                // círculo e o rótulo, preso à base do Stack, cai dentro dele.
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   for (var i = 0; i < items.length; i++)
                     Expanded(

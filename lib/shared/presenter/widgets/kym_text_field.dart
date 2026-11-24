@@ -44,32 +44,53 @@ class KymTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final placeholder = hintText ?? (hideLabel ? label : null);
+
+    final field = TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      enabled: enabled,
+      obscureText: obscureText,
+      autocorrect: autocorrect,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      autofillHints: autofillHints,
+      validator: validator,
+      onChanged: onChanged,
+      onFieldSubmitted: onFieldSubmitted,
+      decoration: InputDecoration(
+        hintText: hideLabel ? null : placeholder,
+        // Sem rótulo visual, o nome vem do Semantics abaixo; o placeholder fica
+        // fora da acessibilidade para não ser lido duas vezes.
+        hint: hideLabel && placeholder != null
+            ? ExcludeSemantics(
+                child: Text(
+                  placeholder,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).inputDecorationTheme.hintStyle,
+                ),
+              )
+            : null,
+        suffixIcon: suffixIcon,
+        prefixIcon: prefixIcon,
+      ),
+    );
+
+    if (hideLabel) {
+      // O placeholder some da acessibilidade quando o campo tem texto; o
+      // rótulo fundido ao campo mantém o nome para o leitor de tela.
+      return MergeSemantics(
+        child: Semantics(label: label, child: field),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!hideLabel) ...[
-          Text(label, style: AppTextStyles.fieldLabel),
-          const SizedBox(height: 6),
-        ],
-        TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          enabled: enabled,
-          obscureText: obscureText,
-          autocorrect: autocorrect,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          autofillHints: autofillHints,
-          validator: validator,
-          onChanged: onChanged,
-          onFieldSubmitted: onFieldSubmitted,
-          decoration: InputDecoration(
-            // Sem rótulo visual, o placeholder é o que o leitor de tela anuncia.
-            hintText: hintText ?? (hideLabel ? label : null),
-            suffixIcon: suffixIcon,
-            prefixIcon: prefixIcon,
-          ),
-        ),
+        Text(label, style: AppTextStyles.fieldLabel),
+        const SizedBox(height: 6),
+        field,
       ],
     );
   }

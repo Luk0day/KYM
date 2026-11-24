@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kym/app/theme/app_theme.dart';
 import 'package:kym/modules/auth/domain/entities/user_role.dart';
+import 'package:kym/modules/stores/domain/entities/store_filter.dart';
 import 'package:kym/modules/stores/domain/entities/store_summary.dart';
 import 'package:kym/modules/stores/domain/repositories/store_list_repository.dart';
-import 'package:kym/modules/stores/domain/services/sync_service.dart';
+import 'package:kym/modules/stores/domain/services/store_sync_trigger.dart';
+import 'package:kym/modules/stores/domain/usecases/filter_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/refresh_stores.dart';
 import 'package:kym/modules/stores/domain/usecases/watch_stores.dart';
 import 'package:kym/modules/stores/presenter/controllers/stores_controller.dart';
@@ -12,24 +14,25 @@ import 'package:kym/modules/stores/presenter/pages/stores_page.dart';
 import 'package:kym/modules/stores/presenter/utils/stores_messages.dart';
 import 'package:kym/modules/stores/presenter/widgets/store_filter_chips.dart';
 import 'package:kym/modules/stores/presenter/widgets/store_tile.dart';
+import 'package:kym/modules/stores/presenter/widgets/sync_status_pill.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../support/store_fakes.dart';
 
-class MockSyncService extends Mock implements SyncService {}
+class MockStoreSyncTrigger extends Mock implements StoreSyncTrigger {}
 
 class MockStoreListRepository extends Mock implements StoreListRepository {}
 
 void main() {
   late FakeStoreListRepository repository;
-  late MockSyncService syncService;
+  late MockStoreSyncTrigger syncService;
   StoreSummary? selected;
 
   setUp(() {
     repository = FakeStoreListRepository(sampleStores);
-    syncService = MockSyncService();
+    syncService = MockStoreSyncTrigger();
     selected = null;
-    when(syncService.sync).thenAnswer((_) async {});
+    when(syncService.sync).thenAnswer((_) async => true);
   });
 
   tearDown(() => repository.close());
@@ -46,6 +49,7 @@ void main() {
 
     final controller = StoresController(
       WatchStores(repo ?? repository),
+      const FilterStores(),
       RefreshStores(syncService),
       sessionFor(role),
     );
@@ -88,22 +92,23 @@ void main() {
   }
 
   group('cabeçalho', () {
-    testWidgets('mostra título, quantidade e selo de sincronização', (
+    testWidgets('mostra título e quantidade, sem selo antes de sincronizar', (
       tester,
     ) async {
       await pumpPage(tester);
 
       expect(find.text('Lojas'), findsOneWidget);
       expect(find.text('2 lojas'), findsOneWidget);
-      expect(find.text('Sincronizado'), findsOneWidget);
+      expect(find.byType(SyncStatusPill), findsNothing);
     });
 
-    testWidgets('a quantidade acompanha a busca', (tester) async {
+    testWidgets('a quantidade é o total, mesmo buscando', (tester) async {
       await pumpPage(tester);
 
       await search(tester, 'olinda');
 
-      expect(find.text('1 loja'), findsOneWidget);
+      expect(find.text('Pão de Açúcar Boa Viagem'), findsNothing);
+      expect(find.text('2 lojas'), findsOneWidget);
     });
   });
 
@@ -185,17 +190,50 @@ void main() {
       await pumpPage(tester);
 
       expect(find.bySemanticsLabel('Buscar loja'), findsWidgets);
+
+      // Com texto digitado o placeholder some, mas o campo segue com nome.
+      await search(tester, 'olinda');
+      final node = tester.getSemantics(find.byType(TextFormField));
+      expect(node.label, 'Buscar loja');
+      expect(node.value, 'olinda');
+      expect(node.flagsCollection.isTextField, isTrue);
       handle.dispose();
     });
 
-    testWidgets('os chips de filtro aparecem e Todas começa marcado', (
+    testWidgets('os chips de filtro aparecem, na ordem, rolando a linha', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      final row = find.descendant(
+        of: find.byType(StoreFilterChips),
+        matching: find.byType(Scrollable),
+      );
+      const labels = [
+        'Todas',
+        'Com atrasadas',
+        'Em dia',
+        'Preventivas',
+        'Corretivas',
+      ];
+
+      // A linha mostra os chips na ordem do enum.
+      expect(StoreFilterKind.values.map((k) => k.label), labels);
+
+      for (final label in labels) {
+        await tester.scrollUntilVisible(find.text(label), 100, scrollable: row);
+        expect(find.text(label), findsOneWidget);
+      }
+    });
+
+    testWidgets('chip Em dia mostra só as lojas sem nada em aberto', (
       tester,
     ) async {
       await pumpPage(tester);
 
-      for (final label in ['Todas', 'Com atrasadas', 'Preventivas']) {
-        expect(find.text(label), findsOneWidget);
-      }
+      await tapChip(tester, 'Em dia');
+
+      expect(find.text('Carrefour Água Fria'), findsOneWidget);
+      expect(find.text('Pão de Açúcar Boa Viagem'), findsNothing);
     });
 
     testWidgets('chip Preventivas filtra as lojas', (tester) async {
@@ -252,6 +290,24 @@ void main() {
       verify(syncService.sync).called(1);
       expect(find.byType(SnackBar), findsNothing);
       expect(find.text('Sincronizado'), findsOneWidget);
+    });
+
+    testWidgets('sem sincronização real, puxar não mostra o selo', (
+      tester,
+    ) async {
+      when(syncService.sync).thenAnswer((_) async => false);
+      await pumpPage(tester);
+
+      await tester.fling(
+        find.byType(ListView).last,
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      verify(syncService.sync).called(1);
+      expect(find.byType(SyncStatusPill), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
     });
 
     testWidgets('falha offline avisa, mantém a lista e troca o selo', (

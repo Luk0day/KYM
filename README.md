@@ -27,6 +27,7 @@ QR Code, checklist, fotos, assinatura e comprovante em PDF — tudo funcionando 
 - [Telas](#telas)
 - [Tecnologias](#tecnologias)
 - [Arquitetura](#arquitetura)
+- [Formato do QR Code](#formato-do-qr-code)
 - [Como executar](#como-executar)
 - [Estado atual](#estado-atual)
 - [Contexto acadêmico](#contexto-acadêmico)
@@ -72,7 +73,7 @@ Legenda: ✅ implementado · 🚧 parcial · ⬜ não iniciado (situação na br
 | RF05 | Exibir os dados da loja, o mapa com o endereço e a lista de equipamentos | ⬜ |
 | RF06 | Exibir informações, status e histórico de manutenção de cada equipamento | ⬜ |
 | RF07 | Abrir um chamado de manutenção corretiva, com descrição e fotos, a partir do equipamento | ⬜ |
-| RF08 | Ler QR Codes com a câmera e tratar o código lido: loja (check-in e check-out) ou equipamento | ⬜ |
+| RF08 | Ler QR Codes com a câmera e tratar o código lido: loja (check-in e check-out) ou equipamento | 🚧 |
 | RF09 | Registrar o check-in e o check-out do técnico na loja, com data e hora, pela leitura do QR Code da loja | ⬜ |
 | RF10 | Consultar a agenda de manutenções preventivas e corretivas, com filtros por status e período | ⬜ |
 | RF11 | Registrar a execução de uma manutenção: checklist, observações e fotos | ⬜ |
@@ -107,7 +108,7 @@ O aplicativo prevê **12 telas**, cada uma com função própria.
 | 4 | Lojas | Listar as lojas, com busca e filtro | Técnico, gestor e lojista (cada um vê só as suas) | ⬜ |
 | 5 | Detalhes da loja | Mostrar dados e mapa, listar os equipamentos e iniciar o check-in lendo o QR da loja | Técnico, gestor e lojista | ⬜ |
 | 6 | Detalhes do equipamento | Mostrar informações, status e histórico, e permitir abrir um chamado corretivo | Técnico, gestor e lojista | ⬜ |
-| 7 | Leitor de QR Code | Abrir a câmera e tratar o código lido: loja (check-in e check-out) ou equipamento | Técnico e lojista | ⬜ |
+| 7 | Leitor de QR Code | Abrir a câmera e tratar o código lido: loja (check-in e check-out) ou equipamento | Técnico e lojista | 🚧 |
 | 8 | Agenda | Listar manutenções preventivas e corretivas, com filtro por status e período | Técnico e gestor | ⬜ |
 | 9 | Registro de manutenção | Preencher checklist, observações e fotos e concluir o serviço | Técnico | ⬜ |
 | 10 | Assinatura | Coletar a assinatura do responsável da loja e gerar o comprovante em PDF | Técnico (o responsável da loja assina no aparelho dele) | ⬜ |
@@ -151,10 +152,50 @@ lib/
 │   │   ├── external/       #   Supabase e Google Sign-In
 │   │   └── presenter/      #   páginas, controllers e widgets
 │   └── home/               # página inicial provisória
-└── shared/presenter/widgets/   # componentes base (botão, campo, chip, banner)
+└── shared/
+    ├── domain/             #   formato dos QR Codes (QrPayload)
+    └── presenter/widgets/  #   componentes base (botão, campo, chip, banner)
 
 supabase/migrations/        # schema inicial: tabelas e políticas RLS
 test/                       # testes de unidade e de widget
+```
+
+## Formato do QR Code
+
+Todo QR Code do KYM carrega um texto curto, sem significado fora do app (não é uma URL, então os leitores comuns não abrem o navegador):
+
+```
+kym:1:S:<qr_token>   → loja
+kym:1:E:<qr_token>   → equipamento
+```
+
+| Parte | Significado |
+|---|---|
+| `kym` | Identifica o sistema |
+| `1` | Versão do formato |
+| `S` / `E` | Tipo: loja (*store*) ou equipamento (*equipment*) |
+| `<qr_token>` | uuid da coluna `qr_token` (não o `id`), em minúsculas |
+
+Usar o `qr_token` permite invalidar um QR impresso gerando um token novo, sem mudar o registro. O formato não tem assinatura criptográfica: o token só identifica, e quem autoriza o acesso é o servidor (RLS).
+
+`QrPayload` (`lib/shared/domain/qr_payload.dart`, Dart puro) faz `encode()` e `parse(String)`. O `parse` nunca lança e devolve um `QrParseResult`:
+
+| Resultado | Quando | O app deve |
+|---|---|---|
+| `QrValid` | QR do KYM, de loja ou de equipamento | seguir o fluxo do tipo |
+| `QrForeign` | Qualquer outro texto (URL, texto livre, outro sistema) | recusar |
+| `QrUnsupportedVersion` | Começa com `kym` e a versão é um número válido diferente de 1 (o resto do texto não é lido) | pedir para atualizar o app |
+| `QrMalformed` | Começa com `kym`, mas não dá para interpretar: só `kym` ou `kym:`, versão que não é um número canônico (`kym:a:...`, `kym:01:...`) ou, na versão 1, tipo ou uuid inválidos, ou partes faltando ou sobrando | recusar como QR inválido |
+
+O texto lido é tolerante: espaços (inclusive quebra de linha) e maiúsculas são aceitos, e o token é normalizado para minúsculas. A versão, ao contrário, precisa estar escrita exatamente como no formato (`1`, não `01`).
+
+```dart
+switch (QrPayload.parse(textoLido)) {
+  case QrValid(:final payload): // payload.type e payload.token
+  case QrForeign(): // não é do KYM
+  case QrUnsupportedVersion(:final version): // atualize o app (version é texto)
+  case QrMalformed(): // QR do KYM inválido
+}
 ```
 
 ## Como executar

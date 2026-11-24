@@ -1,5 +1,5 @@
 import '../../domain/entities/store_filter.dart';
-import '../../domain/services/sync_service.dart';
+import '../../domain/services/store_sync_trigger.dart';
 import '../controllers/stores_controller.dart';
 
 const String storesLoadErrorMessage = 'Não foi possível carregar as lojas.';
@@ -20,6 +20,8 @@ extension SyncFailureMessage on SyncFailureType {
 extension SyncIndicatorLabel on SyncIndicator {
   String get label {
     switch (this) {
+      case SyncIndicator.unknown:
+        return 'Não sincronizado';
       case SyncIndicator.synced:
         return 'Sincronizado';
       case SyncIndicator.offline:
@@ -37,6 +39,8 @@ extension StoreFilterKindLabel on StoreFilterKind {
         return 'Todas';
       case StoreFilterKind.comAtrasadas:
         return 'Com atrasadas';
+      case StoreFilterKind.emDia:
+        return 'Em dia';
       case StoreFilterKind.preventivas:
         return 'Preventivas';
       case StoreFilterKind.corretivas:

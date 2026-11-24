@@ -28,7 +28,7 @@ class WatchStoreEquipment {
     List<Equipment> equipment,
     List<MaintenanceOrder> orders,
   ) {
-    final now = _clock();
+    final today = _dateOnly(_clock());
     final byEquipment = <String, List<MaintenanceOrder>>{};
     for (final order in orders) {
       byEquipment.putIfAbsent(order.equipmentId, () => []).add(order);
@@ -36,7 +36,7 @@ class WatchStoreEquipment {
 
     final items = [
       for (final e in equipment)
-        _summarize(e, byEquipment[e.id] ?? const [], now),
+        _summarize(e, byEquipment[e.id] ?? const [], today),
     ]..sort(_compare);
     return items;
   }
@@ -44,10 +44,9 @@ class WatchStoreEquipment {
   EquipmentListItem _summarize(
     Equipment equipment,
     List<MaintenanceOrder> orders,
-    DateTime now,
+    DateTime today,
   ) {
-    bool isOverdue(MaintenanceOrder o) =>
-        o.scheduledFor != null && o.scheduledFor!.isBefore(now);
+    bool isOverdue(MaintenanceOrder o) => _isOverdue(o, today);
 
     final open = orders.where((o) => _isOpen(o.status)).toList()
       ..sort((a, b) {
@@ -76,6 +75,22 @@ class WatchStoreEquipment {
       nextOrderType: open.isEmpty ? null : open.first.type,
       lastMaintenanceAt: lastDone,
     );
+  }
+
+  /// Regra da B43, a mesma do `situationOn` da Agenda (#75): atrasada é a
+  /// ordem aberta com data antes de hoje. A ordem de hoje não conta, mesmo
+  /// chegando do Supabase à meia-noite (a coluna `scheduled_for` é `date`).
+  /// Quando o `situationOn` estiver na base desta pilha, trocar por ele.
+  static bool _isOverdue(MaintenanceOrder order, DateTime today) {
+    final date = order.scheduledFor;
+    return _isOpen(order.status) &&
+        date != null &&
+        _dateOnly(date).isBefore(today);
+  }
+
+  static DateTime _dateOnly(DateTime value) {
+    final local = value.toLocal();
+    return DateTime(local.year, local.month, local.day);
   }
 
   static bool _isOpen(OrderStatus status) =>

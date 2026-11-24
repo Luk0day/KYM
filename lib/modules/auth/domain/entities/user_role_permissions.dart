@@ -39,6 +39,10 @@ extension UserRolePermissions on UserRole {
 
   bool get canScanQr => canAccess(AppDestination.qr);
 
+  /// O QR da loja faz check-in e check-out, que é do técnico; o lojista só lê
+  /// o QR do equipamento.
+  bool get canScanStoreQr => canScanQr && this == UserRole.tecnico;
+
   bool get canManageQrCodes => canAccess(AppDestination.qrCodes);
 
   /// Todos os perfis abrem chamado corretivo, como na RLS de
@@ -53,6 +57,9 @@ extension UserRolePermissions on UserRole {
 
   /// Cadastro e edição de equipamentos (B29).
   bool get canEditEquipment => this == UserRole.gestor;
+
+  /// Técnico e lojista não veem lojas desativadas; o gestor vê, marcadas.
+  bool get canViewInactiveStores => this == UserRole.gestor;
 
   bool get canScheduleMaintenance => this == UserRole.gestor;
 

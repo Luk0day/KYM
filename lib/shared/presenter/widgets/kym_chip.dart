@@ -28,9 +28,11 @@ class KymChip extends StatelessWidget {
         color: background,
         borderRadius: BorderRadius.circular(999),
       ),
-      // widthFactor: 1 mantém o selo do tamanho do texto, mesmo num Wrap.
+      // Os fatores 1 mantêm o selo do tamanho do texto, mesmo num Wrap ou num
+      // pai de altura fixa (sem eles o Center ocuparia todo o espaço).
       child: Center(
         widthFactor: 1,
+        heightFactor: 1,
         child: Text(
           label.toUpperCase(),
           style: AppTextStyles.label.copyWith(color: foreground),

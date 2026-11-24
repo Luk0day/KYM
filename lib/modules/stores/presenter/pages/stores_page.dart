@@ -104,15 +104,21 @@ class _StoresPageState extends State<StoresPage> {
                 if (ready) ...[
                   const SizedBox(height: 2),
                   Text(
-                    storeCountLabel(_controller.result.items.length),
+                    // O total do perfil, não o resultado da busca (Figma).
+                    storeCountLabel(_controller.result.totalVisible),
                     style: AppTextStyles.metadata,
                   ),
                 ],
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Flexible(child: SyncStatusPill(indicator: _controller.syncIndicator)),
+          // Sem sincronização concluída, a tela não afirma que está em dia.
+          if (_controller.syncIndicator != SyncIndicator.unknown) ...[
+            const SizedBox(width: 12),
+            Flexible(
+              child: SyncStatusPill(indicator: _controller.syncIndicator),
+            ),
+          ],
         ],
       ),
     );

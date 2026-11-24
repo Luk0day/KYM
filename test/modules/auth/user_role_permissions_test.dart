@@ -62,6 +62,7 @@ void main() {
       'canViewDashboard': ((r) => r.canViewDashboard, [true, true, false]),
       'canViewAgenda': ((r) => r.canViewAgenda, [true, true, false]),
       'canScanQr': ((r) => r.canScanQr, [true, false, true]),
+      'canScanStoreQr': ((r) => r.canScanStoreQr, [true, false, false]),
       'canManageQrCodes': ((r) => r.canManageQrCodes, [false, true, false]),
       'canOpenCorrective': ((r) => r.canOpenCorrective, [true, true, true]),
       'canCheckIn': ((r) => r.canCheckIn, [true, false, false]),
