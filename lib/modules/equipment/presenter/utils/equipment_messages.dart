@@ -38,6 +38,21 @@ String formatDate(DateTime value) {
       '${d.month.toString().padLeft(2, '0')}/${d.year}';
 }
 
+/// "Hoje, 14:00", "Amanhã, 09:00" ou "05/11, 10:30" (Figma: Próxima preventiva).
+String formatWhen(DateTime value, DateTime now) {
+  final d = value.toLocal();
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(d.year, d.month, d.day);
+  final hh = d.hour.toString().padLeft(2, '0');
+  final mm = d.minute.toString().padLeft(2, '0');
+  final diff = day.difference(today).inDays;
+  if (diff == 0) return 'Hoje, $hh:$mm';
+  if (diff == 1) return 'Amanhã, $hh:$mm';
+  final dd = d.day.toString().padLeft(2, '0');
+  final mo = d.month.toString().padLeft(2, '0');
+  return '$dd/$mo, $hh:$mm';
+}
+
 String orderTypeLabel(OrderType type) => switch (type) {
   OrderType.preventiva => 'Preventiva',
   OrderType.corretiva => 'Corretiva',

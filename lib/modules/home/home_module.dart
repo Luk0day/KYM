@@ -14,7 +14,9 @@ import '../auth/domain/entities/user_role_permissions.dart';
 import '../auth/presenter/controllers/session_controller.dart';
 import '../auth/presenter/guards/role_guard.dart';
 import '../auth/presenter/utils/user_role_label.dart';
+import '../equipment/presenter/controllers/equipment_detail_controller.dart';
 import '../equipment/presenter/controllers/equipment_list_controller.dart';
+import '../equipment/presenter/pages/equipment_detail_page.dart';
 import '../stores/presenter/controllers/store_detail_controller.dart';
 import '../stores/presenter/controllers/stores_controller.dart';
 import '../stores/presenter/pages/store_detail_page.dart';
@@ -40,6 +42,9 @@ class HomeModule extends Module {
         currentRole: _currentRole,
         fallbackRoute: _initialRoute,
       ).call;
+
+  static String? _authGuard(RouteState state) =>
+      _currentRole() == null ? AuthRoutes.login : null;
 
   static String? _shellGuard(RouteState state) {
     final role = _currentRole();
@@ -73,9 +78,30 @@ class HomeModule extends Module {
           equipmentController: context.read<EquipmentListController>(),
           canCheckIn: _currentRole()?.canCheckIn ?? false,
           onBack: () => context.pop(),
-          // TODO(B28): abrir o detalhe do equipamento.
-          onEquipmentSelected: (_) {},
+          onEquipmentSelected: (equipment) =>
+              context.pushNamed(HomeRoutes.equipamento(equipment.id)),
         ),
+      )
+      // Detalhe do equipamento (B28): qualquer perfil logado; a lista da loja
+      // e o leitor de QR (B32) chegam aqui pelo id.
+      ..route(
+        HomeRoutes.equipamentoPath,
+        guards: [_authGuard],
+        provide: (scoped) {
+          scoped.addChangeNotifier<EquipmentDetailController>(
+            EquipmentDetailController.new,
+          );
+        },
+        child: (context, state) {
+          final user = inject<SessionController>().user;
+          return EquipmentDetailPage(
+            equipmentId: state.params['id']!,
+            controller: context.read<EquipmentDetailController>(),
+            role: user?.role ?? UserRole.lojista,
+            currentUserId: user?.id,
+            onBack: () => context.pop(),
+          );
+        },
       )
       ..route(
         '/',
