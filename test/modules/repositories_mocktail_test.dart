@@ -214,6 +214,7 @@ void main() {
           operation: any(named: 'operation'),
           entity: any(named: 'entity'),
           entityId: any(named: 'entityId'),
+          userId: any(named: 'userId'),
           payload: any(named: 'payload'),
         ),
       ).thenAnswer((_) async => 1);
@@ -258,6 +259,8 @@ void main() {
                   operation: local.OutboxOperation.insert,
                   entity: local.OutboxEntity.maintenanceOrder,
                   entityId: 'o1',
+                  // Quem abriu a ordem é o dono do item na fila.
+                  userId: 'u1',
                   payload: captureAny(named: 'payload'),
                 ),
               ).captured.single
@@ -286,6 +289,7 @@ void main() {
                     operation: any(named: 'operation'),
                     entity: any(named: 'entity'),
                     entityId: any(named: 'entityId'),
+                    userId: any(named: 'userId'),
                     payload: captureAny(named: 'payload'),
                   ),
                 ).captured.single
@@ -302,6 +306,7 @@ void main() {
           operation: any(named: 'operation'),
           entity: any(named: 'entity'),
           entityId: any(named: 'entityId'),
+          userId: any(named: 'userId'),
           payload: any(named: 'payload'),
         ),
       ).thenThrow(StateError('disco cheio'));
@@ -326,6 +331,7 @@ void main() {
             operation: any(named: 'operation'),
             entity: any(named: 'entity'),
             entityId: any(named: 'entityId'),
+            userId: any(named: 'userId'),
             payload: any(named: 'payload'),
           ),
         );
