@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 
 import '../../../../app/database/app_database.dart' as local;
+import '../../domain/entities/agenda_item.dart';
 import '../../domain/entities/maintenance_order.dart';
 import '../../domain/repositories/order_repository.dart';
 
@@ -36,6 +37,21 @@ class OrderRepositoryImpl implements OrderRepository {
   Stream<MaintenanceOrder?> watchById(String id) => _db.maintenanceOrdersDao
       .watchById(id)
       .map((row) => row == null ? null : _toEntity(row));
+
+  @override
+  Stream<List<AgendaItem>> watchAgenda({String? assignedTo}) => _db
+      .maintenanceOrdersDao
+      .watchAgenda(assignedTo: assignedTo)
+      .map(
+        (rows) => [
+          for (final row in rows)
+            AgendaItem(
+              order: _toEntity(row.order),
+              equipmentName: row.equipment.name,
+              storeName: row.store.name,
+            ),
+        ],
+      );
 
   @override
   Future<MaintenanceOrder?> findById(String id) async {

@@ -3,6 +3,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/presenter/navigation/tab_reselect.dart';
 import '../../../../shared/presenter/widgets/kym_bottom_nav_bar.dart';
 import '../../../auth/domain/entities/user_role_permissions.dart';
 import '../../../auth/presenter/controllers/session_controller.dart';
@@ -22,6 +23,7 @@ class ShellPage extends StatefulWidget {
 
 class _ShellPageState extends State<ShellPage> {
   final _outletKey = GlobalKey<RouterOutletState>();
+  final _reselect = TabReselect();
 
   void _open(AppDestination destination) {
     final route = HomeRoutes.of(destination);
@@ -29,7 +31,18 @@ class _ShellPageState extends State<ShellPage> {
       context.pushNamed(route);
       return;
     }
+    final current = HomeRoutes.destinationOf(context.routeState().uri.path);
+    if (destination == current) {
+      _reselect.reselect();
+      return;
+    }
     _outletKey.currentState?.navigate(route);
+  }
+
+  @override
+  void dispose() {
+    _reselect.dispose();
+    super.dispose();
   }
 
   @override
@@ -47,7 +60,10 @@ class _ShellPageState extends State<ShellPage> {
         final wide =
             MediaQuery.sizeOf(context).width >= ShellPage.railBreakpoint;
 
-        final outlet = RouterOutlet(key: _outletKey);
+        final outlet = TabReselectScope(
+          notifier: _reselect,
+          child: RouterOutlet(key: _outletKey),
+        );
 
         if (!wide) {
           return Scaffold(
