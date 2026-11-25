@@ -27,6 +27,9 @@ class Stores extends Table {
   TextColumn get qrToken => text().unique()();
   BoolColumn get active => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
+
+  /// `updated_at` do servidor (B20). Nulo = ainda não veio do servidor.
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
@@ -54,6 +57,9 @@ class Equipments extends Table {
   DateTimeColumn get installedAt => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
+
+  /// `updated_at` do servidor (B20). Nulo = ainda não veio do servidor.
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
@@ -137,4 +143,29 @@ class Outbox extends Table {
   /// exemplo, `opened_by = auth.uid()`), então a sync só manda os itens de
   /// quem está logado. Nulo nos itens anteriores à v2 do banco.
   TextColumn get userId => text().nullable()();
+}
+
+/// Marca da baixada incremental (B20), uma linha por tabela do servidor.
+/// Fica no Drift para ser apagada junto com o resto no logout (B16).
+@DataClassName('SyncStateEntry')
+class SyncState extends Table {
+  /// Tabela do servidor (`stores`, `equipment`…).
+  TextColumn get remoteTable => text()();
+
+  /// Maior `updated_at` recebido, como o servidor mandou (ISO 8601 em UTC,
+  /// com microssegundos). Fica em texto para não perder precisão: o relógio
+  /// do aparelho não entra na conta.
+  TextColumn get cursor => text().nullable()();
+
+  /// Última reconciliação completa (que também remove o que sumiu do
+  /// servidor). Hora do aparelho; só decide quando fazer a próxima.
+  DateTimeColumn get lastFullPullAt => dateTime().nullable()();
+
+  /// Usuário da última reconciliação completa. Se outro usuário entrar no
+  /// aparelho, a próxima baixada é completa e tira o que ele não pode ver
+  /// (o logout ainda não limpa o banco local).
+  TextColumn get userId => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {remoteTable};
 }

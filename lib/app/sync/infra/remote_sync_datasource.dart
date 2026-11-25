@@ -35,7 +35,23 @@ class RemoteOperation {
   String toString() => 'RemoteOperation(${kind.name} $table/$id)';
 }
 
-/// Envio de operações ao servidor. A implementação real usa o Supabase
+/// Onde a baixada de uma tabela parou: as linhas vêm ordenadas por
+/// (`updated_at`, `id`) e a próxima página começa depois deste ponto.
+class PullCursor {
+  const PullCursor({required this.updatedAt, this.id});
+
+  /// `updated_at` em ISO 8601 UTC, como o servidor mandou.
+  final String updatedAt;
+
+  /// Id da última linha recebida. Sem ele, a página começa em [updatedAt]
+  /// inclusive (`>=`), o que pode repetir linhas, mas nunca pula nenhuma.
+  final String? id;
+
+  @override
+  String toString() => 'PullCursor($updatedAt, $id)';
+}
+
+/// Envio e baixada de dados do servidor. A implementação real usa o Supabase
 /// (external); os testes usam um fake.
 abstract class RemoteSyncDataSource {
   /// Id do usuário logado, ou nulo sem sessão. Sem sessão o RLS recusaria
@@ -49,4 +65,13 @@ abstract class RemoteSyncDataSource {
   /// Aplica a operação. Lança `SyncNetworkException` em falha passageira e
   /// `SyncServerException` quando o servidor recusa.
   Future<void> push(RemoteOperation operation);
+
+  /// Uma página de linhas de [table] que o usuário pode ver (a RLS filtra),
+  /// ordenadas por (`updated_at`, `id`) e a partir de [after]. Sem [after],
+  /// desde o início. Lança as mesmas exceções de [push].
+  Future<List<Map<String, dynamic>>> fetchChanges(
+    String table, {
+    PullCursor? after,
+    required int limit,
+  });
 }

@@ -200,11 +200,47 @@ void main() {
     expect(items.map((e) => e.id), [first, second]);
   });
 
-  test('migração v1 → v2 adiciona lastAttemptAt e userId sem perder a fila',
+  test('migração v1 → v3 mantém a fila e as lojas e cria o SyncState',
       () async {
     final legacy = AppDatabase.forTesting(
       NativeDatabase.memory(
         setup: (raw) {
+          raw.execute('''
+            CREATE TABLE stores (
+              id TEXT NOT NULL PRIMARY KEY,
+              name TEXT NOT NULL,
+              code TEXT NULL UNIQUE,
+              address TEXT NULL,
+              city TEXT NULL,
+              latitude REAL NULL,
+              longitude REAL NULL,
+              qr_token TEXT NOT NULL UNIQUE,
+              active INTEGER NOT NULL DEFAULT 1,
+              created_at INTEGER NOT NULL,
+              synced_at INTEGER NULL
+            );
+          ''');
+          raw.execute('''
+            CREATE TABLE equipment (
+              id TEXT NOT NULL PRIMARY KEY,
+              store_id TEXT NOT NULL REFERENCES stores (id) ON DELETE CASCADE,
+              name TEXT NOT NULL,
+              category TEXT NULL,
+              brand TEXT NULL,
+              model TEXT NULL,
+              serial_number TEXT NULL,
+              qr_token TEXT NOT NULL UNIQUE,
+              status TEXT NOT NULL DEFAULT 'operando',
+              installed_at INTEGER NULL,
+              notes TEXT NULL,
+              created_at INTEGER NOT NULL,
+              synced_at INTEGER NULL
+            );
+          ''');
+          raw.execute('''
+            INSERT INTO stores (id, name, qr_token, created_at)
+            VALUES ('s1', 'Loja', 'qr-s1', 1763000000);
+          ''');
           raw.execute('''
             CREATE TABLE outbox (
               id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -239,6 +275,15 @@ void main() {
     expect(
       (await legacy.outboxDao.findById(items.single.id))!.lastAttemptAt,
       isNotNull,
+    );
+
+    final store = await legacy.storesDao.findById('s1');
+    expect(store!.name, 'Loja');
+    expect(store.updatedAt, isNull);
+    await legacy.pullDao.saveCursor('stores', '2026-11-18T10:00:00.000Z');
+    expect(
+      (await legacy.pullDao.stateFor('stores'))!.cursor,
+      '2026-11-18T10:00:00.000Z',
     );
   });
 }

@@ -86,7 +86,7 @@ class AppModule extends Module {
       ..module(AgendaModule(clock: agendaClock))
       ..module(HomeModule())
       ..module(EquipmentModule())
-      ..module(StoresModule())
+      ..module(StoresModule(syncService: sync))
       ..module(ScannerModule(cameraBuilder: scannerCameraBuilder));
   }
 }

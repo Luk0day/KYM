@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 
 import '../database/app_database.dart';
 import '../database/daos/outbox_dao.dart';
+import 'incremental_puller.dart';
 import 'infra/outbox_mapper.dart';
 import 'infra/remote_sync_datasource.dart';
 import 'retry_policy.dart';
@@ -18,6 +19,8 @@ class SyncResult {
     this.skipped = 0,
     this.interruptedBy,
     this.nextRetryAt,
+    this.pulled,
+    this.pullError,
   });
 
   /// Itens confirmados pelo servidor.
@@ -37,6 +40,14 @@ class SyncResult {
   /// Quando há item falho a tentar de novo. Nulo se não há.
   final DateTime? nextRetryAt;
 
+  /// Resumo da baixada (B20). Nulo se ela não rodou: sem puller, rodada
+  /// interrompida no envio ou baixada interrompida pela rede.
+  final PullResult? pulled;
+
+  /// Erro do servidor que parou a baixada (a rede caindo vai em
+  /// [interruptedBy]).
+  final String? pullError;
+
   bool get interrupted => interruptedBy != null;
 
   SyncResult operator +(SyncResult other) => SyncResult(
@@ -45,11 +56,17 @@ class SyncResult {
         skipped: other.skipped,
         interruptedBy: other.interruptedBy,
         nextRetryAt: other.nextRetryAt,
+        pulled: switch ((pulled, other.pulled)) {
+          (final a?, final b?) => a + b,
+          (final a, final b) => b ?? a,
+        },
+        pullError: other.pullError,
       );
 
   @override
   String toString() => 'SyncResult(sent: $sent, failed: $failed, '
-      'skipped: $skipped, interrupted: $interrupted)';
+      'skipped: $skipped, interrupted: $interrupted, pulled: $pulled'
+      '${pullError == null ? '' : ', pullError: $pullError'})';
 }
 
 /// Processador da outbox: envia ao Supabase, na ordem em que foram criadas,
@@ -67,10 +84,13 @@ class SyncResult {
 /// - Só vão os itens do usuário logado (o RLS exige que o dono os envie); os
 ///   de outro usuário esperam ele entrar de novo.
 /// - Itens concluídos há mais de [doneRetention] são apagados.
+/// - Depois do envio, faz a baixada (B20) com o [IncrementalPuller], se
+///   houver. Enviar antes garante que o servidor já tem as alterações locais.
 class SyncService {
   SyncService({
     required this._outbox,
     required this._remote,
+    this._puller,
     this._mapper = const OutboxMapper(),
     this._retryPolicy = const RetryPolicy(),
     this._clock = DateTime.now,
@@ -79,6 +99,7 @@ class SyncService {
 
   final OutboxDao _outbox;
   final RemoteSyncDataSource _remote;
+  final IncrementalPuller? _puller;
   final OutboxMapper _mapper;
   final RetryPolicy _retryPolicy;
   final DateTime Function() _clock;
@@ -86,6 +107,7 @@ class SyncService {
 
   Future<SyncResult>? _running;
   bool _rerunRequested = false;
+  bool _fullPullRequested = false;
   final List<StreamSubscription<Object?>> _subscriptions = [];
   Timer? _retryTimer;
   DateTime? _retryAt;
@@ -112,10 +134,15 @@ class SyncService {
     _subscriptions.clear();
   }
 
-  /// Processa a fila. Se já houver uma rodada em andamento, não começa outra:
-  /// devolve a atual e pede mais uma volta ao fim dela, para pegar o que foi
-  /// enfileirado no meio.
-  Future<SyncResult> sync() async {
+  /// Envia a fila e baixa as novidades. Se já houver uma rodada em andamento,
+  /// não começa outra: devolve a atual e pede mais uma volta ao fim dela, para
+  /// pegar o que foi enfileirado no meio.
+  ///
+  /// [fullPull] pede a reconciliação completa da baixada, que também apaga o
+  /// que sumiu do servidor ("Sincronizar agora", B16). Se a rodada for
+  /// interrompida, o pedido fica para a próxima.
+  Future<SyncResult> sync({bool fullPull = false}) async {
+    if (fullPull) _fullPullRequested = true;
     final running = _running;
     if (running != null) {
       _rerunRequested = true;
@@ -313,11 +340,38 @@ class SyncService {
 
     await _outbox.purgeDone(olderThan: _clock().subtract(doneRetention));
 
+    final puller = _puller;
+    PullResult? pulled;
+    String? pullError;
+    if (puller != null) {
+      final full = _fullPullRequested;
+      _fullPullRequested = false;
+      try {
+        pulled = await puller.pull(full: full, userId: userId);
+      } on SyncNetworkException catch (e) {
+        _fullPullRequested = _fullPullRequested || full;
+        return SyncResult(
+          sent: sent,
+          failed: failed,
+          skipped: skipped,
+          interruptedBy: e,
+          nextRetryAt: nextRetryAt,
+        );
+      } catch (e) {
+        // Erro do servidor ou linha inválida: o que já foi gravado fica, e a
+        // próxima rodada continua da marca salva.
+        _fullPullRequested = _fullPullRequested || full;
+        pullError = _describe(e);
+      }
+    }
+
     return SyncResult(
       sent: sent,
       failed: failed,
       skipped: skipped,
       nextRetryAt: nextRetryAt,
+      pulled: pulled,
+      pullError: pullError,
     );
   }
 

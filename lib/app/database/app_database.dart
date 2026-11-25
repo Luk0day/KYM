@@ -5,6 +5,7 @@ import 'daos/equipments_dao.dart';
 import 'daos/maintenance_orders_dao.dart';
 import 'daos/outbox_dao.dart';
 import 'daos/photos_dao.dart';
+import 'daos/pull_dao.dart';
 import 'daos/stores_dao.dart';
 import 'enums.dart';
 import 'tables.dart';
@@ -14,13 +15,14 @@ export 'enums.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Stores, Equipments, MaintenanceOrders, Photos, Outbox],
+  tables: [Stores, Equipments, MaintenanceOrders, Photos, Outbox, SyncState],
   daos: [
     StoresDao,
     EquipmentsDao,
     MaintenanceOrdersDao,
     PhotosDao,
     OutboxDao,
+    PullDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -31,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -39,15 +41,17 @@ class AppDatabase extends _$AppDatabase {
         onUpgrade: (m, from, to) async {
           // Próximas versões: aumente `schemaVersion` e migre por etapas, sem
           // recriar tabelas (isso apagaria dados offline ainda não enviados).
-          //
-          //   if (from < 3) {
-          //     await m.createTable(novaTabela);
-          //   }
           if (from < 2) {
             // B19: espera entre tentativas, limpeza e dono de cada item da
             // outbox.
             await m.addColumn(outbox, outbox.lastAttemptAt);
             await m.addColumn(outbox, outbox.userId);
+          }
+          if (from < 3) {
+            // B20: baixada incremental por updated_at.
+            await m.addColumn(stores, stores.updatedAt);
+            await m.addColumn(equipments, equipments.updatedAt);
+            await m.createTable(syncState);
           }
         },
         beforeOpen: (details) async {
