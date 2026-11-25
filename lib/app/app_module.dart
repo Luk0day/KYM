@@ -1,9 +1,12 @@
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:uuid/uuid.dart';
 
+import '../modules/agenda/agenda_module.dart';
+import '../modules/agenda/presenter/utils/agenda_clock.dart';
 import '../modules/auth/auth_module.dart';
 import '../modules/auth/infra/datasources/auth_datasource.dart';
 import '../modules/equipment/domain/repositories/equipment_repository.dart';
+import '../modules/equipment/equipment_module.dart';
 import '../modules/equipment/infra/repositories/equipment_repository_impl.dart';
 import '../modules/home/home_module.dart';
 import '../modules/home/home_routes.dart';
@@ -13,12 +16,14 @@ import '../modules/scanner/presenter/widgets/scanner_camera_builder.dart';
 import '../modules/scanner/scanner_module.dart';
 import '../modules/stores/domain/repositories/store_repository.dart';
 import '../modules/stores/infra/repositories/store_repository_impl.dart';
+import '../modules/stores/stores_module.dart';
 import 'database/app_database.dart';
 import 'database/daos/equipments_dao.dart';
 import 'database/daos/maintenance_orders_dao.dart';
 import 'database/daos/outbox_dao.dart';
 import 'database/daos/photos_dao.dart';
 import 'database/daos/stores_dao.dart';
+import 'storage/key_value_store.dart';
 import 'sync/sync_service.dart';
 
 /// As fábricas são injetadas para que testes e o modo fake troquem o Supabase
@@ -28,12 +33,15 @@ class AppModule extends Module {
   AppModule({
     required this.authDataSourceFactory,
     AppDatabase Function()? databaseFactory,
+    this.agendaClock = const AgendaClock(),
     this.syncService,
     this.scannerCameraBuilder,
+    this.recoveryStoreFactory,
   }) : databaseFactory = databaseFactory ?? AppDatabase.new;
 
   final AuthDataSource Function() authDataSourceFactory;
   final AppDatabase Function() databaseFactory;
+  final AgendaClock agendaClock;
 
   /// Processador da outbox (B19). Criado no `main` junto do banco para ser
   /// ligado logo na abertura do app; nulo no modo fake, que não sincroniza.
@@ -41,6 +49,9 @@ class AppModule extends Module {
 
   /// Troca a câmera do leitor de QR nos testes; em produção fica nulo.
   final ScannerCameraBuilder? scannerCameraBuilder;
+
+  /// Guarda a marca de recuperação de senha em andamento (B56).
+  final KeyValueStore Function()? recoveryStoreFactory;
 
   @override
   void register(ModularContext c) {
@@ -69,9 +80,13 @@ class AppModule extends Module {
         AuthModule(
           dataSourceFactory: authDataSourceFactory,
           authenticatedRoute: HomeRoutes.root,
+          recoveryStoreFactory: recoveryStoreFactory,
         ),
       )
+      ..module(AgendaModule(clock: agendaClock))
       ..module(HomeModule())
+      ..module(EquipmentModule())
+      ..module(StoresModule(syncService: sync))
       ..module(ScannerModule(cameraBuilder: scannerCameraBuilder));
   }
 }
