@@ -117,6 +117,15 @@ void main() {
     expect(result.pulled!.deleted, 0);
   });
 
+  test('a baixada sabe quem está logado', () async {
+    remote.serverUpsert('stores', serverStore('s1'));
+    remote.userId = 'u9';
+
+    await service.sync();
+
+    expect((await db.pullDao.stateFor('stores'))!.userId, 'u9');
+  });
+
   test('soma o que foi baixado nas voltas extras', () {
     const a = SyncResult(pulled: PullResult(written: 2));
     const b = SyncResult(pulled: PullResult(written: 3));

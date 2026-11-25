@@ -370,6 +370,27 @@ void main() {
       expect(await db.storesDao.findById('s1'), isNotNull);
     });
 
+    test('outro usuário no aparelho força a reconciliação', () async {
+      seedServer();
+      await puller().pull(userId: 'u1');
+      expect((await db.pullDao.stateFor('stores'))!.userId, 'u1');
+
+      // O mesmo usuário segue incremental.
+      remote.fetches.clear();
+      await puller().pull(userId: 'u1');
+      expect(remote.fetches.first.$2, isNotNull);
+
+      // u2 não vê a loja s2: ela sai do aparelho já na primeira baixada dele.
+      remote.rows['stores']!.remove('s2');
+      remote.fetches.clear();
+      final result = await puller().pull(userId: 'u2');
+
+      expect(remote.fetches.first.$2, isNull);
+      expect(result.deleted, 1);
+      expect(await db.storesDao.findById('s2'), isNull);
+      expect((await db.pullDao.stateFor('stores'))!.userId, 'u2');
+    });
+
     test('roda sozinha depois do intervalo', () async {
       seedServer();
       await puller().pull();

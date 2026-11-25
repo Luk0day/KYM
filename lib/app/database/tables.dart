@@ -161,6 +161,11 @@ class SyncState extends Table {
   /// servidor). Hora do aparelho; só decide quando fazer a próxima.
   DateTimeColumn get lastFullPullAt => dateTime().nullable()();
 
+  /// Usuário da última reconciliação completa. Se outro usuário entrar no
+  /// aparelho, a próxima baixada é completa e tira o que ele não pode ver
+  /// (o logout ainda não limpa o banco local).
+  TextColumn get userId => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {remoteTable};
 }

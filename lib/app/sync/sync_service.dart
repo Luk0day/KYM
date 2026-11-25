@@ -347,7 +347,7 @@ class SyncService {
       final full = _fullPullRequested;
       _fullPullRequested = false;
       try {
-        pulled = await puller.pull(full: full);
+        pulled = await puller.pull(full: full, userId: userId);
       } on SyncNetworkException catch (e) {
         _fullPullRequested = _fullPullRequested || full;
         return SyncResult(

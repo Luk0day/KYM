@@ -44,14 +44,23 @@ class PullDao extends DatabaseAccessor<AppDatabase> with _$PullDaoMixin {
         ),
       );
 
-  Future<void> markFullPull(String remoteTable, DateTime at) =>
+  /// Registra a reconciliação completa de [remoteTable], feita por [userId].
+  Future<void> markFullPull(
+    String remoteTable,
+    DateTime at, {
+    String? userId,
+  }) =>
       into(syncState).insert(
         SyncStateCompanion.insert(
           remoteTable: remoteTable,
           lastFullPullAt: Value(at),
+          userId: Value(userId),
         ),
         onConflict: DoUpdate(
-          (_) => SyncStateCompanion(lastFullPullAt: Value(at)),
+          (_) => SyncStateCompanion(
+            lastFullPullAt: Value(at),
+            userId: Value(userId),
+          ),
         ),
       );
 

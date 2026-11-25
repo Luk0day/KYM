@@ -44,8 +44,9 @@ class PullResult {
 ///   regra completa de conflitos fica na B22).
 /// - Exclusões: o servidor não tem exclusão lógica, então o incremental não as
 ///   vê. A reconciliação completa (baixar tudo e apagar o que sumiu) roda no
-///   primeiro pull de cada tabela, quando pedida ("Sincronizar agora", B16) e
-///   a cada [fullPullInterval]. Ela também traz o que passou a ser visível sem
+///   primeiro pull de cada tabela, quando pedida ("Sincronizar agora", B16),
+///   quando outro usuário entra no aparelho e a cada [fullPullInterval]. Ela
+///   também traz o que passou a ser visível sem
 ///   mudar de `updated_at` (por exemplo, técnico adicionado a uma loja).
 class IncrementalPuller {
   IncrementalPuller({
@@ -69,13 +70,16 @@ class IncrementalPuller {
   final Duration fullPullInterval;
 
   /// Baixa todas as tabelas. Com [full], faz a reconciliação completa em
-  /// todas. Lança `SyncNetworkException` ou `SyncServerException`; o que já
+  /// todas. [userId] é quem está logado: se a última reconciliação foi de
+  /// outro usuário, ela é refeita, para não mostrar a ele o que era do
+  /// anterior. Lança `SyncNetworkException` ou `SyncServerException`; o que já
   /// foi gravado e a marca até ali ficam.
-  Future<PullResult> pull({bool full = false}) async {
+  Future<PullResult> pull({bool full = false, String? userId}) async {
     final pending = await _pending();
     var total = const PullResult();
     for (final table in tables) {
-      total = total + await _pullTable(table, pending, forceFull: full);
+      total = total +
+          await _pullTable(table, pending, forceFull: full, userId: userId);
     }
     return total;
   }
@@ -84,6 +88,7 @@ class IncrementalPuller {
     PullTable<Table, dynamic> table,
     _Pending pending, {
     required bool forceFull,
+    required String? userId,
   }) async {
     final now = _clock();
     final state = await _db.pullDao.stateFor(table.remote);
@@ -92,6 +97,7 @@ class IncrementalPuller {
     final full = forceFull ||
         storedCursor == null ||
         lastFull == null ||
+        (userId != null && state?.userId != userId) ||
         now.difference(lastFull) >= fullPullInterval;
 
     var after = full
@@ -143,7 +149,7 @@ class IncrementalPuller {
         table.local(_db),
         {...seen, ...pending.keep},
       );
-      await _db.pullDao.markFullPull(table.remote, now);
+      await _db.pullDao.markFullPull(table.remote, now, userId: userId);
     }
     return PullResult(written: written, skipped: skipped, deleted: deleted);
   }
