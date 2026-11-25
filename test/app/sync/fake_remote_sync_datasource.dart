@@ -8,6 +8,9 @@ import 'package:kym/app/sync/infra/remote_sync_datasource.dart';
 class FakeRemoteSyncDataSource implements RemoteSyncDataSource {
   bool session = true;
 
+  /// Usuário logado enquanto [session] for verdadeiro.
+  String userId = 'u1';
+
   /// Chamado antes de aplicar cada operação; lançar aqui simula a falha.
   FutureOr<void> Function(RemoteOperation op)? onPush;
 
@@ -21,7 +24,7 @@ class FakeRemoteSyncDataSource implements RemoteSyncDataSource {
       StreamController<void>.broadcast();
 
   @override
-  Future<bool> hasSession() async => session;
+  Future<String?> currentUserId() async => session ? userId : null;
 
   @override
   Stream<void> get sessionReady => sessionController.stream;

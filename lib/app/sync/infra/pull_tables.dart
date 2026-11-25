@@ -167,7 +167,11 @@ PulledRow<Equipment> _equipment(Map<String, dynamic> j, DateTime syncedAt) {
     model: Value(_textOrNull(j, 'model')),
     serialNumber: Value(_textOrNull(j, 'serial_number')),
     qrToken: Value(_text(j, 'qr_token')),
-    status: Value(_text(j, 'status')),
+    // Status desconhecido (servidor mais novo que o app) vira `operando`, como
+    // na leitura do banco, em vez de deixar o equipamento de fora.
+    status: Value(
+      const EquipmentStatusConverter().fromSql(_text(j, 'status')),
+    ),
     installedAt: Value(_dateOrNull(j, 'installed_at')),
     notes: Value(_textOrNull(j, 'notes')),
     createdAt: Value(_timestamp(j, 'created_at')),

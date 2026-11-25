@@ -124,9 +124,30 @@ void main() {
       );
       final result = await puller().pull();
 
-      expect((await db.equipmentsDao.findById('e1'))!.status, 'parado');
+      expect(
+        (await db.equipmentsDao.findById('e1'))!.status,
+        EquipmentStatus.parado,
+      );
       expect(result.deleted, 0);
       expect((await db.pullDao.stateFor('equipment'))!.cursor, stamp(60));
+    });
+
+    test('status de equipamento desconhecido vira operando sem perder a linha',
+        () async {
+      seedServer();
+      await puller().pull();
+
+      remote.serverUpsert(
+        'equipment',
+        serverEquipment('e1', 's1', at: 60, status: 'em_calibracao'),
+      );
+      final result = await puller().pull();
+
+      expect(
+        (await db.equipmentsDao.findById('e1'))!.status,
+        EquipmentStatus.operando,
+      );
+      expect(result.skipped, 0);
     });
 
     test('pagina por (updated_at, id) sem pular linhas do mesmo instante',
@@ -169,6 +190,7 @@ void main() {
         ),
       );
       await db.outboxDao.enqueue(
+        userId: 'u1',
         operation: OutboxOperation.update,
         entity: OutboxEntity.maintenanceOrder,
         entityId: 'o1',
@@ -192,6 +214,7 @@ void main() {
       seedServer();
       await puller().pull();
       await db.outboxDao.enqueue(
+        userId: 'u1',
         operation: OutboxOperation.insert,
         entity: OutboxEntity.maintenanceOrder,
         entityId: 'o-local',
@@ -215,6 +238,7 @@ void main() {
         ),
       );
       await db.outboxDao.enqueue(
+        userId: 'u1',
         operation: OutboxOperation.insert,
         entity: OutboxEntity.photo,
         entityId: 'p-local',
@@ -318,6 +342,7 @@ void main() {
         ),
       );
       await db.outboxDao.enqueue(
+        userId: 'u1',
         operation: OutboxOperation.insert,
         entity: OutboxEntity.equipment,
         entityId: 'e-local',

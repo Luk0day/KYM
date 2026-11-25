@@ -71,6 +71,7 @@ void main() {
         [true, false, false],
       ),
       'canEditStores': ((r) => r.canEditStores, [false, true, false]),
+      'canEditEquipment': ((r) => r.canEditEquipment, [false, true, false]),
       'canScheduleMaintenance': (
         (r) => r.canScheduleMaintenance,
         [false, true, false],

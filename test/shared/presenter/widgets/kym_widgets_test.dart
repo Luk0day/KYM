@@ -43,8 +43,9 @@ void main() {
       expect(find.text('Entrar'), findsNothing);
     });
 
-    testWidgets('cada variante usa o botão do Material correspondente',
-        (tester) async {
+    testWidgets('cada variante usa o botão do Material correspondente', (
+      tester,
+    ) async {
       Future<void> pumpVariant(KymButtonVariant variant) {
         return tester.pumpWidget(
           _wrap(KymButton(label: 'Ação', onPressed: () {}, variant: variant)),
@@ -106,6 +107,29 @@ void main() {
 
       expect(find.text('Informe sua senha.'), findsOneWidget);
     });
+
+    testWidgets('sem rótulo visual, o leitor de tela anuncia o nome mesmo '
+        'com texto', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _wrap(
+          const SizedBox(
+            width: 300,
+            child: KymTextField(label: 'Buscar loja', hideLabel: true),
+          ),
+        ),
+      );
+
+      expect(find.text('Buscar loja'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField), 'centro');
+      await tester.pumpAndSettle();
+
+      final node = tester.getSemantics(find.byType(TextFormField));
+      expect(node.label, 'Buscar loja');
+      expect(node.value, 'centro');
+      handle.dispose();
+    });
   });
 
   group('KymBanner', () {
@@ -118,9 +142,7 @@ void main() {
 
     testWidgets('sucesso mostra o ícone de check', (tester) async {
       await tester.pumpWidget(
-        _wrap(
-          const KymBanner(message: 'Salvo.', type: KymBannerType.success),
-        ),
+        _wrap(const KymBanner(message: 'Salvo.', type: KymBannerType.success)),
       );
 
       expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
@@ -133,6 +155,21 @@ void main() {
     );
 
     expect(find.text('PREVENTIVA'), findsOneWidget);
+  });
+
+  testWidgets('KymChip não estica num pai de altura fixa', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const SizedBox(
+          height: 120,
+          child: Row(
+            children: [KymChip(label: 'Em dia', tone: KymChipTone.done)],
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.getSize(find.byType(KymChip)).height, lessThan(60));
   });
 
   testWidgets('KymBrandLogo mostra marca e subtítulo', (tester) async {

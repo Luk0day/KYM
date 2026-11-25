@@ -16,6 +16,8 @@ class KymTextField extends StatelessWidget {
     this.autocorrect = true,
     this.enabled = true,
     this.suffixIcon,
+    this.prefixIcon,
+    this.hideLabel = false,
     this.validator,
     this.onChanged,
     this.onFieldSubmitted,
@@ -32,34 +34,63 @@ class KymTextField extends StatelessWidget {
   final bool autocorrect;
   final bool enabled;
   final Widget? suffixIcon;
+  final Widget? prefixIcon;
+
+  /// Esconde o rótulo visual (o campo de busca só tem o placeholder).
+  final bool hideLabel;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onFieldSubmitted;
 
   @override
   Widget build(BuildContext context) {
+    final placeholder = hintText ?? (hideLabel ? label : null);
+
+    final field = TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      enabled: enabled,
+      obscureText: obscureText,
+      autocorrect: autocorrect,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      autofillHints: autofillHints,
+      validator: validator,
+      onChanged: onChanged,
+      onFieldSubmitted: onFieldSubmitted,
+      decoration: InputDecoration(
+        hintText: hideLabel ? null : placeholder,
+        // Sem rótulo visual, o nome vem do Semantics abaixo; o placeholder fica
+        // fora da acessibilidade para não ser lido duas vezes.
+        hint: hideLabel && placeholder != null
+            ? ExcludeSemantics(
+                child: Text(
+                  placeholder,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).inputDecorationTheme.hintStyle,
+                ),
+              )
+            : null,
+        suffixIcon: suffixIcon,
+        prefixIcon: prefixIcon,
+      ),
+    );
+
+    if (hideLabel) {
+      // O placeholder some da acessibilidade quando o campo tem texto; o
+      // rótulo fundido ao campo mantém o nome para o leitor de tela.
+      return MergeSemantics(
+        child: Semantics(label: label, child: field),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: AppTextStyles.fieldLabel),
         const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          enabled: enabled,
-          obscureText: obscureText,
-          autocorrect: autocorrect,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          autofillHints: autofillHints,
-          validator: validator,
-          onChanged: onChanged,
-          onFieldSubmitted: onFieldSubmitted,
-          decoration: InputDecoration(
-            hintText: hintText,
-            suffixIcon: suffixIcon,
-          ),
-        ),
+        field,
       ],
     );
   }

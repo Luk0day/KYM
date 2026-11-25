@@ -34,6 +34,7 @@ void main() {
   test('envia a outbox antes de baixar', () async {
     remote.serverUpsert('stores', serverStore('s1'));
     await db.outboxDao.enqueue(
+      userId: 'u1',
       operation: OutboxOperation.update,
       entity: OutboxEntity.store,
       entityId: 's-x',
@@ -54,6 +55,7 @@ void main() {
 
   test('sem rede no envio, não baixa', () async {
     await db.outboxDao.enqueue(
+      userId: 'u1',
       operation: OutboxOperation.update,
       entity: OutboxEntity.store,
       entityId: 's-x',

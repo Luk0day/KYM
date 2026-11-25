@@ -65,19 +65,27 @@ void main() {
     String id, {
     OutboxOperation operation = OutboxOperation.insert,
     Map<String, Object?>? payload,
+    String? userId = 'u1',
   }) =>
       db.outboxDao.enqueue(
         operation: operation,
         entity: OutboxEntity.maintenanceOrder,
         entityId: id,
+        userId: userId,
         payload: payload ??
             {'id': id, 'equipment_id': 'e1', 'store_id': 's1', 'type': 'corretiva'},
       );
 
-  Future<int> enqueuePhoto(String id, String orderId) => db.outboxDao.enqueue(
+  Future<int> enqueuePhoto(
+    String id,
+    String orderId, {
+    String? userId = 'u1',
+  }) =>
+      db.outboxDao.enqueue(
         operation: OutboxOperation.insert,
         entity: OutboxEntity.photo,
         entityId: id,
+        userId: userId,
         payload: {'id': id, 'order_id': orderId, 'storage_path': 'x.jpg'},
       );
 
@@ -114,11 +122,33 @@ void main() {
       expect(synced!.syncedAt, now);
     });
 
+    test('segue a ordem de criação mesmo se o relógio do aparelho voltar',
+        () async {
+      await enqueueOrder('o1');
+      final update = await enqueueOrder(
+        'o1',
+        operation: OutboxOperation.update,
+        payload: {'status': 'concluida'},
+      );
+      // O relógio voltou entre as duas operações: o update ficou "mais velho".
+      await (db.update(db.outbox)..where((o) => o.id.equals(update))).write(
+        OutboxCompanion(createdAt: Value(DateTime(2020))),
+      );
+
+      await service.sync();
+
+      expect(remote.pushed.map((op) => op.kind), [
+        RemoteOperationKind.insert,
+        RemoteOperationKind.update,
+      ]);
+    });
+
     test('exclusão não procura registro local para marcar', () async {
       final id = await db.outboxDao.enqueue(
         operation: OutboxOperation.delete,
         entity: OutboxEntity.photo,
         entityId: 'p-apagada',
+        userId: 'u1',
         payload: {},
       );
 
@@ -134,12 +164,14 @@ void main() {
         operation: OutboxOperation.update,
         entity: OutboxEntity.store,
         entityId: 's1',
+        userId: 'u1',
         payload: {'name': 'Loja nova'},
       );
       await db.outboxDao.enqueue(
         operation: OutboxOperation.update,
         entity: OutboxEntity.equipment,
         entityId: 'e1',
+        userId: 'u1',
         payload: {'status': 'parado'},
       );
 
@@ -209,6 +241,39 @@ void main() {
       expect((await entry(a)).status, OutboxStatus.done);
     });
 
+    test('troca de usuário: só vão os itens de quem está logado', () async {
+      final fromA = await enqueueOrder('o1', userId: 'a');
+      // Foto de B que aponta para a ordem de A: espera a ordem subir.
+      final photoOfB = await enqueuePhoto('p1', 'o1', userId: 'b');
+      final fromB = await enqueueOrder('o2', userId: 'b');
+      remote.userId = 'b';
+
+      final result = await service.sync();
+
+      expect(remote.pushedIds, ['o2']);
+      expect(result.skipped, 2);
+      expect(result.failed, 0);
+      final waiting = await entry(fromA);
+      expect(waiting.status, OutboxStatus.pending);
+      expect(waiting.attempts, 0);
+      expect((await entry(photoOfB)).status, OutboxStatus.pending);
+      expect((await entry(fromB)).status, OutboxStatus.done);
+
+      // A entra de novo: a ordem dele sobe.
+      remote.userId = 'a';
+      await service.sync();
+      expect(remote.pushedIds, ['o2', 'o1']);
+      expect((await entry(fromA)).status, OutboxStatus.done);
+    });
+
+    test('item sem dono (anterior à v2) vai com quem estiver logado', () async {
+      final legacy = await enqueueOrder('o1', userId: null);
+
+      await service.sync();
+
+      expect((await entry(legacy)).status, OutboxStatus.done);
+    });
+
     test('sem sessão não envia nada', () async {
       await enqueueOrder('o1');
       remote.session = false;
@@ -266,6 +331,19 @@ void main() {
       expect(result.failed, 1);
       expect(remote.pushed, isEmpty);
       expect((await entry(id)).lastError, startsWith('payload inválido'));
+    });
+
+    test('payload inválido espera a vez como qualquer item falho', () async {
+      final id = await enqueueOrder('o1');
+      await (db.update(db.outbox)..where((o) => o.id.equals(id)))
+          .write(const OutboxCompanion(payload: Value('[1, 2]')));
+      await service.sync();
+
+      now = now.add(const Duration(seconds: 1));
+      final result = await service.sync();
+
+      expect(result.skipped, 1);
+      expect((await entry(id)).attempts, 1);
     });
   });
 
@@ -350,6 +428,49 @@ void main() {
       expect(item.attempts, 2);
     });
 
+    test('item vencido preso a um pai que ainda espera não pede tentativa '
+        'imediata', () async {
+      final order = await enqueueOrder('o1');
+      final photo = await enqueuePhoto('p1', 'o1');
+      // Pai: 2 falhas, a última há 10 s; espera 1 min, então volta em 50 s.
+      await db.outboxDao.markFailed(order, 'recusado');
+      await db.outboxDao.markFailed(
+        order,
+        'recusado',
+        at: now.subtract(const Duration(seconds: 10)),
+      );
+      // Filho: 1 falha há 10 min, já poderia tentar de novo.
+      await db.outboxDao.markFailed(
+        photo,
+        'sem o pai',
+        at: now.subtract(const Duration(minutes: 10)),
+      );
+
+      final result = await service.sync();
+
+      expect(remote.pushed, isEmpty);
+      expect(result.nextRetryAt, now.add(const Duration(seconds: 50)));
+    });
+
+    test('item preso a um pai que esgotou as tentativas não agenda nada',
+        () async {
+      final order = await enqueueOrder('o1');
+      for (var i = 0; i < 5; i++) {
+        await db.outboxDao.markFailed(order, 'recusado');
+      }
+      final photo = await enqueuePhoto('p1', 'o1');
+      await db.outboxDao.markFailed(
+        photo,
+        'sem o pai',
+        at: now.subtract(const Duration(minutes: 10)),
+      );
+
+      final result = await service.sync();
+
+      expect(remote.pushed, isEmpty);
+      expect(result.nextRetryAt, isNull);
+    });
+
     test('resetFailed devolve o item à fila', () async {
       final a = await enqueueOrder('o1');
       remote.onPush = (_) => throw const SyncServerException('recusado');
@@ -415,6 +536,7 @@ void main() {
         operation: OutboxOperation.update,
         entity: OutboxEntity.equipment,
         entityId: 'e1',
+        userId: 'u1',
         payload: {'serialNumber': 'ABC', 'syncedAt': 'local'},
       );
 
@@ -494,6 +616,37 @@ void main() {
       await service.sync();
 
       await waitUntil(() => remote.pushed.length == 2);
+    });
+
+    test('queda de rede não apaga a nova tentativa já agendada', () async {
+      // Relógio real: o timer e a espera entre tentativas usam a mesma hora.
+      service = SyncService(
+        outbox: db.outboxDao,
+        remote: remote,
+        retryPolicy: const RetryPolicy(
+          baseDelay: Duration(seconds: 1),
+        ),
+      );
+      var o1Fails = true;
+      remote.onPush = (op) {
+        if (op.id == 'o1' && o1Fails) {
+          throw const SyncServerException('recusado');
+        }
+        if (op.id == 'o2') throw const SyncNetworkException('caiu');
+      };
+      await enqueueOrder('o1');
+
+      service.start();
+      await waitUntil(() => remote.pushed.length == 1 && !service.isRunning);
+
+      // Rodada que cai por rede antes de o1 voltar a ser tentado.
+      o1Fails = false;
+      await enqueueOrder('o2');
+      await waitUntil(() => remote.pushedIds.contains('o2'));
+
+      await waitUntil(
+        () => remote.pushedIds.where((id) => id == 'o1').length == 2,
+      );
     });
 
     test('dispose desliga os gatilhos', () async {

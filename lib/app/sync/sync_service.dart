@@ -81,6 +81,8 @@ class SyncResult {
 /// - Um item cujo registro (ou registro pai: loja, equipamento, ordem) tem
 ///   envio falho ou adiado é pulado, para não gerar erro de chave estrangeira
 ///   em cascata nem aplicar uma atualização antes da inserção.
+/// - Só vão os itens do usuário logado (o RLS exige que o dono os envie); os
+///   de outro usuário esperam ele entrar de novo.
 /// - Itens concluídos há mais de [doneRetention] são apagados.
 /// - Depois do envio, faz a baixada (B20) com o [IncrementalPuller], se
 ///   houver. Enviar antes garante que o servidor já tem as alterações locais.
@@ -108,6 +110,7 @@ class SyncService {
   bool _fullPullRequested = false;
   final List<StreamSubscription<Object?>> _subscriptions = [];
   Timer? _retryTimer;
+  DateTime? _retryAt;
 
   bool get isRunning => _running != null;
 
@@ -124,8 +127,7 @@ class SyncService {
 
   /// Desliga os gatilhos. Uma rodada em andamento termina normalmente.
   Future<void> dispose() async {
-    _retryTimer?.cancel();
-    _retryTimer = null;
+    _cancelRetry();
     for (final sub in _subscriptions) {
       await sub.cancel();
     }
@@ -180,14 +182,35 @@ class SyncService {
   }
 
   void _scheduleRetry(SyncResult result) {
+    final next = result.nextRetryAt;
+    if (!result.interrupted) {
+      _cancelRetry();
+    } else {
+      // A rodada parou no meio (sem rede, sem sessão) e não viu a fila toda:
+      // o agendamento que já existia continua valendo. Só é antecipado se a
+      // rodada achou uma tentativa mais cedo.
+      final current = _retryAt;
+      if (current != null && (next == null || !next.isBefore(current))) {
+        return;
+      }
+    }
+    // Sem gatilhos ligados (testes, app sem sessão), quem acorda a fila é a
+    // próxima chamada a [sync].
+    if (next == null || _subscriptions.isEmpty) return;
+    _cancelRetry();
+    _retryAt = next;
+    final wait = next.difference(_clock());
+    _retryTimer = Timer(wait.isNegative ? Duration.zero : wait, () {
+      _retryTimer = null;
+      _retryAt = null;
+      _trigger();
+    });
+  }
+
+  void _cancelRetry() {
     _retryTimer?.cancel();
     _retryTimer = null;
-    final next = result.nextRetryAt;
-    // Sem gatilhos ligados (testes, app sem sessão) ou sem rede: quem acorda a
-    // fila é a reconexão.
-    if (next == null || result.interrupted || _subscriptions.isEmpty) return;
-    final wait = next.difference(_clock());
-    _retryTimer = Timer(wait.isNegative ? Duration.zero : wait, _trigger);
+    _retryAt = null;
   }
 
   Future<SyncResult> _runUntilSettled() async {
@@ -200,7 +223,8 @@ class SyncService {
   }
 
   Future<SyncResult> _runOnce() async {
-    if (!await _remote.hasSession()) {
+    final userId = await _remote.currentUserId();
+    if (userId == null) {
       return const SyncResult(
         interruptedBy: SyncNetworkException('sem sessão'),
       );
@@ -222,6 +246,9 @@ class SyncService {
     var skipped = 0;
     DateTime? nextRetryAt;
 
+    // Item preso a outro (registro pai, item anterior do mesmo registro, dono
+    // deslogado) não agenda nada: quem o destrava é o agendamento do outro.
+    // Agendar um item preso e já vencido faria o timer disparar sem parar.
     void noteRetry(OutboxEntry entry, {int extraAttempts = 0}) {
       final at = _retryPolicy.nextAttemptAt(
         entry.attempts + extraAttempts,
@@ -233,6 +260,29 @@ class SyncService {
     }
 
     for (final entry in items) {
+      // Item de outro usuário: o RLS exige que o dono esteja logado, então ele
+      // espera o dono voltar e segura o que depende dele. Itens sem dono são
+      // anteriores à v2 do banco e vão com quem estiver logado.
+      if (entry.userId != null && entry.userId != userId) {
+        skipped++;
+        blocked.add(entry.entityId);
+        continue;
+      }
+
+      if (blocked.contains(entry.entityId)) {
+        skipped++;
+        continue;
+      }
+
+      // Antes do mapeamento, para um payload inválido também esperar a vez.
+      if (entry.status == OutboxStatus.failed &&
+          !_retryPolicy.isDue(entry.attempts, entry.lastAttemptAt, _clock())) {
+        skipped++;
+        blocked.add(entry.entityId);
+        noteRetry(entry);
+        continue;
+      }
+
       final RemoteOperation operation;
       try {
         operation = _mapper.toRemote(entry);
@@ -244,22 +294,18 @@ class SyncService {
         );
         failed++;
         blocked.add(entry.entityId);
+        if (entry.attempts + 1 < maxAttempts) {
+          noteRetry(
+            entry.copyWith(lastAttemptAt: Value(_clock())),
+            extraAttempts: 1,
+          );
+        }
         continue;
       }
 
-      if (blocked.contains(entry.entityId) ||
-          _mapper.referencedIds(operation).any(blocked.contains)) {
+      if (_mapper.referencedIds(operation).any(blocked.contains)) {
         skipped++;
         blocked.add(entry.entityId);
-        if (entry.status == OutboxStatus.failed) noteRetry(entry);
-        continue;
-      }
-
-      if (entry.status == OutboxStatus.failed &&
-          !_retryPolicy.isDue(entry.attempts, entry.lastAttemptAt, _clock())) {
-        skipped++;
-        blocked.add(entry.entityId);
-        noteRetry(entry);
         continue;
       }
 

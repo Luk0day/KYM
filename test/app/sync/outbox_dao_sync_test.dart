@@ -13,6 +13,7 @@ void main() {
         operation: OutboxOperation.insert,
         entity: OutboxEntity.photo,
         entityId: entityId,
+        userId: 'u1',
         payload: {'id': entityId},
       );
 
@@ -163,6 +164,7 @@ void main() {
       operation: OutboxOperation.insert,
       entity: OutboxEntity.store,
       entityId: 's1',
+      userId: 'u1',
       payload: {'id': 's1'},
     );
     final at = DateTime(2026, 11, 18, 12);
@@ -171,6 +173,31 @@ void main() {
 
     expect((await entry(id)).status, OutboxStatus.done);
     expect((await db.storesDao.findById('s1'))!.syncedAt, at);
+  });
+
+  test('guarda o dono do item', () async {
+    final id = await db.outboxDao.enqueue(
+      operation: OutboxOperation.insert,
+      entity: OutboxEntity.photo,
+      entityId: 'p1',
+      userId: 'u7',
+      payload: {'id': 'p1'},
+    );
+
+    expect((await entry(id)).userId, 'u7');
+  });
+
+  test('a fila sai na ordem do id, mesmo com o relógio fora de ordem',
+      () async {
+    final first = await enqueue('a');
+    final second = await enqueue('b');
+    await (db.update(db.outbox)..where((o) => o.id.equals(second))).write(
+      OutboxCompanion(createdAt: Value(DateTime(2020))),
+    );
+
+    final items = await db.outboxDao.listRetryable(maxAttempts: 5);
+
+    expect(items.map((e) => e.id), [first, second]);
   });
 
   test('migração v1 → v3 mantém a fila e as lojas e cria o SyncState',
@@ -243,6 +270,7 @@ void main() {
     expect(items, hasLength(1));
     expect(items.single.entityId, 'p1');
     expect(items.single.lastAttemptAt, isNull);
+    expect(items.single.userId, isNull);
     await legacy.outboxDao.markFailed(items.single.id, 'erro');
     expect(
       (await legacy.outboxDao.findById(items.single.id))!.lastAttemptAt,

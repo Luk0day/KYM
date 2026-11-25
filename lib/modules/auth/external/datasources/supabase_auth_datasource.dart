@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../domain/entities/password_recovery_event.dart';
 import '../../domain/errors/auth_failure.dart';
 import '../../infra/datasources/auth_datasource.dart';
 import '../../infra/datasources/google_id_token_provider.dart';
@@ -19,6 +20,25 @@ class SupabaseAuthDataSource implements AuthDataSource {
   static const Set<String> _rateLimitCodes = {
     'over_email_send_rate_limit',
     'over_request_rate_limit',
+  };
+  static const Set<String> _recoveryLinkCodes = {
+    'otp_expired',
+    'flow_state_expired',
+    'flow_state_not_found',
+    'session_not_found',
+    'session_expired',
+    'bad_code_verifier',
+  };
+
+  /// Só estes códigos indicam um link de redefinição expirado, usado ou
+  /// aberto em outro aparelho. Ficam de fora session_expired e
+  /// session_not_found, que o gotrue também emite ao restaurar uma sessão
+  /// vencida.
+  static const Set<String> _linkErrorCodes = {
+    'otp_expired',
+    'flow_state_expired',
+    'flow_state_not_found',
+    'bad_code_verifier',
   };
 
   @override
@@ -122,6 +142,53 @@ class SupabaseAuthDataSource implements AuthDataSource {
     });
   }
 
+  @override
+  Future<void> updatePassword({required String password}) {
+    return _execute(() async {
+      await _client.auth.updateUser(UserAttributes(password: password));
+    });
+  }
+
+  /// Converte o onAuthStateChange do Supabase: o evento passwordRecovery vira
+  /// started, e o erro de um link expirado ou já usado (emitido no mesmo
+  /// stream pelo supabase_flutter) vira linkInvalid. Os outros erros desse
+  /// stream, como a renovação do token sem internet, são ignorados.
+  @override
+  Stream<PasswordRecoveryEvent> get passwordRecoveryEvents => _client
+      .auth
+      .onAuthStateChange
+      .transform(
+        StreamTransformer<AuthState, PasswordRecoveryEvent>.fromHandlers(
+          handleData: (state, sink) {
+            if (state.event == AuthChangeEvent.passwordRecovery) {
+              sink.add(PasswordRecoveryEvent.started);
+            }
+          },
+          handleError: (error, stackTrace, sink) {
+            if (_isRecoveryLinkError(error)) {
+              sink.add(PasswordRecoveryEvent.linkInvalid);
+            }
+          },
+        ),
+      );
+
+  /// O erro que vem da URL do link chega com o error_code em statusCode e o
+  /// error (access_denied) em code. A troca do código PKCE falha com
+  /// AuthPKCEGrantCodeExchangeError quando o link é aberto em outro aparelho.
+  static bool _isRecoveryLinkError(Object error) {
+    if (error is AuthPKCEGrantCodeExchangeError) {
+      return true;
+    }
+    if (error is! AuthException || error is AuthRetryableFetchException) {
+      return false;
+    }
+    final code = error.code?.toLowerCase();
+    final statusCode = error.statusCode?.toLowerCase();
+    return code == 'access_denied' ||
+        _linkErrorCodes.contains(code) ||
+        _linkErrorCodes.contains(statusCode);
+  }
+
   Future<AuthUserModel> _fetchUserProfile({
     required String userId,
     required String email,
@@ -195,6 +262,20 @@ class SupabaseAuthDataSource implements AuthDataSource {
     if (code == 'invalid_credentials' ||
         message.contains('invalid login credentials')) {
       return const AuthFailure(AuthFailureType.invalidCredentials);
+    }
+
+    if (error is AuthWeakPasswordException || code == 'weak_password') {
+      return const AuthFailure(AuthFailureType.weakPassword);
+    }
+
+    if (code == 'same_password') {
+      return const AuthFailure(AuthFailureType.samePassword);
+    }
+
+    if (error is AuthSessionMissingException ||
+        _recoveryLinkCodes.contains(code) ||
+        _recoveryLinkCodes.contains(error.statusCode?.toLowerCase())) {
+      return const AuthFailure(AuthFailureType.recoveryLinkInvalid);
     }
 
     return const AuthFailure(AuthFailureType.unexpected);

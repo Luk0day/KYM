@@ -78,7 +78,7 @@ class FakeDataSeeder {
     String category, {
     String? brand,
     String? model,
-    String status = 'operando',
+    EquipmentStatus status = EquipmentStatus.operando,
   }) => EquipmentsCompanion.insert(
     id: '00000000-0000-4000-8000-0000000000e${n.toRadixString(16)}',
     storeId: storeId,
@@ -106,7 +106,7 @@ class FakeDataSeeder {
       'Refrigeração',
       brand: 'Elber',
       model: 'CF-300',
-      status: 'em_manutencao',
+      status: EquipmentStatus.emManutencao,
     ),
     _eq(
       3,
@@ -132,7 +132,7 @@ class FakeDataSeeder {
       'Refrigeração',
       brand: 'Metalfrio',
       model: 'DA550',
-      status: 'parado',
+      status: EquipmentStatus.parado,
     ),
     _eq(
       7,
@@ -195,6 +195,29 @@ class FakeDataSeeder {
       openedBy: const Value(gestorId),
       assignedTo: const Value(tecnicoId),
       completedAt: Value(DateTime(2026, 10, 15, 15, 30)),
+    ),
+    // Duas preventivas com a data já vencida (aparecem como atrasadas).
+    MaintenanceOrdersCompanion.insert(
+      id: '00000000-0000-4000-8000-0000000000f4',
+      equipmentId: '00000000-0000-4000-8000-0000000000e3',
+      storeId: _centro,
+      type: OrderType.preventiva,
+      status: Value(OrderStatus.agendada),
+      description: const Value('Higienização e checagem do compressor.'),
+      scheduledFor: Value(DateTime(2026, 11, 5, 9)),
+      openedBy: const Value(gestorId),
+      assignedTo: const Value(tecnicoId),
+    ),
+    MaintenanceOrdersCompanion.insert(
+      id: '00000000-0000-4000-8000-0000000000f5',
+      equipmentId: '00000000-0000-4000-8000-0000000000e4',
+      storeId: _centro,
+      type: OrderType.preventiva,
+      status: Value(OrderStatus.agendada),
+      description: const Value('Teste de baterias do nobreak.'),
+      scheduledFor: Value(DateTime(2026, 11, 8, 14)),
+      openedBy: const Value(gestorId),
+      assignedTo: const Value(tecnicoId),
     ),
   ];
 }

@@ -42,8 +42,10 @@ class AppDatabase extends _$AppDatabase {
           // Próximas versões: aumente `schemaVersion` e migre por etapas, sem
           // recriar tabelas (isso apagaria dados offline ainda não enviados).
           if (from < 2) {
-            // B19: espera entre tentativas e limpeza da outbox.
+            // B19: espera entre tentativas, limpeza e dono de cada item da
+            // outbox.
             await m.addColumn(outbox, outbox.lastAttemptAt);
+            await m.addColumn(outbox, outbox.userId);
           }
           if (from < 3) {
             // B20: baixada incremental por updated_at.

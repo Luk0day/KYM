@@ -117,7 +117,7 @@ void main() {
       final equipment = await db.equipmentsDao.findById('eq-1');
       final fromStore1 = await db.equipmentsDao.listByStore('store-1');
 
-      expect(equipment!.status, 'operando');
+      expect(equipment!.status, EquipmentStatus.operando);
       expect(fromStore1.map((e) => e.id), ['eq-1']);
     });
 
@@ -272,6 +272,7 @@ void main() {
         operation: OutboxOperation.insert,
         entity: OutboxEntity.maintenanceOrder,
         entityId: 'order-1',
+        userId: 'u1',
         payload: {'status': 'aberta', 'type': 'corretiva'},
       );
 
@@ -290,18 +291,21 @@ void main() {
         operation: OutboxOperation.insert,
         entity: OutboxEntity.photo,
         entityId: 'photo-1',
+        userId: 'u1',
         payload: {},
       );
       final second = await db.outboxDao.enqueue(
         operation: OutboxOperation.update,
         entity: OutboxEntity.maintenanceOrder,
         entityId: 'order-1',
+        userId: 'u1',
         payload: {},
       );
       final third = await db.outboxDao.enqueue(
         operation: OutboxOperation.delete,
         entity: OutboxEntity.photo,
         entityId: 'photo-2',
+        userId: 'u1',
         payload: {},
       );
 
@@ -315,6 +319,7 @@ void main() {
         operation: OutboxOperation.insert,
         entity: OutboxEntity.photo,
         entityId: 'photo-1',
+        userId: 'u1',
         payload: {},
       );
 
@@ -332,6 +337,7 @@ void main() {
         operation: OutboxOperation.insert,
         entity: OutboxEntity.photo,
         entityId: 'photo-1',
+        userId: 'u1',
         payload: {},
       );
 

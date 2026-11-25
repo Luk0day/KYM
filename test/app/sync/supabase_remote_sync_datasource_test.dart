@@ -249,7 +249,25 @@ void main() {
 
   group('sessão', () {
     test('sem usuário logado não há sessão', () async {
-      expect(await dataSource.hasSession(), isFalse);
+      expect(await dataSource.currentUserId(), isNull);
+    });
+
+    test('com sessão devolve o id do usuário logado', () async {
+      await client.auth.setInitialSession(
+        jsonEncode({
+          'access_token': 'token',
+          'token_type': 'bearer',
+          'user': {
+            'id': 'u1',
+            'app_metadata': <String, Object?>{},
+            'user_metadata': <String, Object?>{},
+            'aud': 'authenticated',
+            'created_at': '2026-11-01T00:00:00Z',
+          },
+        }),
+      );
+
+      expect(await dataSource.currentUserId(), 'u1');
     });
 
     test('sessionReady ignora eventos sem sessão', () async {

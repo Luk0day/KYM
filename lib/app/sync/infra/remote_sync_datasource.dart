@@ -54,9 +54,9 @@ class PullCursor {
 /// Envio e baixada de dados do servidor. A implementação real usa o Supabase
 /// (external); os testes usam um fake.
 abstract class RemoteSyncDataSource {
-  /// Se há usuário logado. Sem sessão o RLS recusaria tudo, então a fila nem
-  /// começa.
-  Future<bool> hasSession();
+  /// Id do usuário logado, ou nulo sem sessão. Sem sessão o RLS recusaria
+  /// tudo, então a fila nem começa; com sessão, só vão os itens desse usuário.
+  Future<String?> currentUserId();
 
   /// Emite quando passa a existir uma sessão válida (app aberto já logado,
   /// login, token renovado). É um dos gatilhos da sincronização.

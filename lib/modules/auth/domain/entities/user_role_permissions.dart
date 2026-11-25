@@ -55,6 +55,12 @@ extension UserRolePermissions on UserRole {
 
   bool get canEditStores => this == UserRole.gestor;
 
+  /// Cadastro e edição de equipamentos (B29).
+  bool get canEditEquipment => this == UserRole.gestor;
+
+  /// Técnico e lojista não veem lojas desativadas; o gestor vê, marcadas.
+  bool get canViewInactiveStores => this == UserRole.gestor;
+
   bool get canScheduleMaintenance => this == UserRole.gestor;
 
   bool get canTriageOrders => this == UserRole.gestor;
